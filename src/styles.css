@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #121b21;
+  color: #f4f4f4;
+  font-family: 'Poppins', Arial, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}

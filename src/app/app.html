@@ -1,0 +1,292 @@
+<main class="wallet-shell">
+  <header class="hero">
+    <img src="sattva.png" alt="Sattva Finanças" class="brand-logo" />
+    <p>Controle suas finanças pessoais de forma simples e eficiente.</p>
+  </header>
+
+  <section class="balance-card" aria-label="Balanco mensal">
+    <div class="balance-card__inner">
+      <h1>Balanço</h1>
+
+      <div class="metric">
+        <span class="metric__label">
+          <img src="iconoir_money-square-solid.svg" alt="" />
+          Entradas
+        </span>
+        <strong>{{ summary().income | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+      </div>
+
+      <div class="metric">
+        <span class="metric__label">
+          <img src="iconoir_money-square-solid.svg" alt="" />
+          Saidas
+        </span>
+        <strong>{{ summary().fixedExpenses + summary().variableExpenses + summary().savings | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+      </div>
+
+      <div class="metric metric--balance" [ngClass]="{ 'is-negative': summary().balance < 0 }">
+        <span class="metric__label">
+          <img src="iconoir_money-square-solid.svg" alt="" />
+          Saldo
+        </span>
+        <strong>{{ summary().balance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="month-filter" aria-label="Filtro">
+    <span>Mês de referência</span>
+    <div class="month-picker">
+      <button class="month-trigger" type="button" (click)="toggleMonthPicker()">
+        {{ selectedMonthLabel() }}
+        <span>⌄</span>
+      </button>
+
+      @if (monthPickerOpen()) {
+        <div class="month-panel">
+          <div class="month-panel__header">
+            <button type="button" (click)="changeYear(-1)" aria-label="Ano anterior">&lt;</button>
+            <strong>{{ viewedYear() }}</strong>
+            <button type="button" (click)="changeYear(1)" aria-label="Proximo ano">&gt;</button>
+          </div>
+
+          <div class="month-grid">
+            @for (month of monthOptions(); track month.value) {
+              <button
+                type="button"
+                [class.is-selected]="month.value === currentMonth()"
+                (click)="updateCurrentMonth(month.value)"
+              >
+                {{ month.label }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="entry-grid" aria-label="Lancamentos">
+    <article class="entry-card">
+      <h2>Gastos Variaveis</h2>
+      <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
+        <label>
+          Descrição:
+          <input type="text" formControlName="description" placeholder="Mercado" />
+        </label>
+        <label>
+          R$:
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask/>
+        </label>
+        @if (variableExpenseForm.controls.isInstallment.value) {
+          <label>
+            Parcelas
+            <input type="number" min="1" step="1" formControlName="installments" />
+          </label>
+        }
+        <div class="form-actions">
+          <label class="check-row">
+            parcelado?
+            <input type="checkbox" formControlName="isInstallment" />
+          </label>
+          <button type="submit">Adicionar</button>
+        </div>
+      </form>
+
+      <button class="list-toggle" type="button" (click)="toggleList('variable')" aria-label="Mostrar gastos variaveis">
+        <span>{{ entriesByKind('variable-expense').length }} lançamentos</span>
+        <span>⌄</span>
+      </button>
+
+      @if (visibleLists().variable) {
+        <ul class="entry-list">
+          @for (entry of entriesByKind('variable-expense'); track entry.id) {
+            <li>
+              <span>{{ entry.description }}</span>
+              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto variavel">×</button>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="entry-card">
+      <h2>Gastos Fixos</h2>
+      <form [formGroup]="fixedExpenseForm" (ngSubmit)="addFixedExpense()">
+        <label>
+          Descrição:
+          <input type="text" formControlName="description" placeholder="Internet"/>
+        </label>
+        <label>
+          R$:
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
+        </label>
+        <button type="submit">Adicionar</button>
+      </form>
+
+      <button class="list-toggle" type="button" (click)="toggleList('fixed')" aria-label="Mostrar gastos fixos">
+        <span>{{ entriesByKind('fixed-expense').length }} lançamentos</span>
+        <span>⌄</span>
+      </button>
+
+      @if (visibleLists().fixed) {
+        <ul class="entry-list">
+          @for (entry of entriesByKind('fixed-expense'); track entry.id) {
+            <li>
+              <span>{{ entry.description }}</span>
+              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto fixo">×</button>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+
+    <article class="entry-card">
+      <h2>Renda mensal</h2>
+      <form [formGroup]="incomeForm" (ngSubmit)="addIncome()">
+        <label>
+          Descrição:
+          <input type="text" formControlName="description" placeholder="Salário" />
+        </label>
+        <label>
+          R$:
+          <input type="text" formControlName="value" placeholder="0.00" appRealMask />
+        </label>
+        <button type="submit">Adicionar</button>
+      </form>
+
+      <button class="list-toggle" type="button" (click)="toggleList('income')" aria-label="Mostrar rendas">
+        <span>{{ entriesByKind('income').length }} lançamentos</span>
+        <span>⌄</span>
+      </button>
+
+      @if (visibleLists().income) {
+        <ul class="entry-list">
+          @for (entry of entriesByKind('income'); track entry.id) {
+            <li>
+              <span>{{ entry.description }}</span>
+              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover renda">×</button>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+  </section>
+
+  <section class="lower-grid" aria-label="Resumo e cofrinho">
+    <article class="summary-panel">
+      <header>
+        <h2>Resumo</h2>
+        <span>{{ currentMonth() + '-01' | date: 'MMMM y' : undefined : 'pt-BR' }}</span>
+      </header>
+      <dl>
+        <div>
+          <dt>Gastos Fixos</dt>
+          <dd>{{ summary().fixedExpenses | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+        </div>
+        <div>
+          <dt>Gastos Variaveis</dt>
+          <dd>{{ summary().variableExpenses | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+        </div>
+        <div>
+          <dt>Renda mensal</dt>
+          <dd>{{ summary().income | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+        </div>
+        <div>
+          <dt>Cofrinho</dt>
+          <dd>{{ summary().savings | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+        </div>
+      </dl>
+    </article>
+
+    <article class="saving-card">
+      <h2>Cofrinho</h2>
+      <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
+        <label>
+          Descrição
+          <input type="text" formControlName="description" placeholder="Viagem"/>
+        </label>
+        <label>
+          R$:
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask/>
+        </label>
+        <button type="submit">Adicionar</button>
+      </form>
+
+      <button class="list-toggle" type="button" (click)="toggleList('saving')" aria-label="Mostrar cofrinho">
+        <span>{{ entriesByKind('saving').length }} lancamentos</span>
+        <span>⌄</span>
+      </button>
+
+      @if (visibleLists().saving) {
+        <ul class="entry-list">
+          @for (entry of entriesByKind('saving'); track entry.id) {
+            <li>
+              <span>{{ entry.description }}</span>
+              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover cofrinho">×</button>
+            </li>
+          }
+        </ul>
+      }
+    </article>
+  </section>
+
+  <footer class="app-footer">
+    <div class="footer-actions">
+      <button type="button" (click)="exportBackup()">Exportar backup</button>
+      <label class="import-button">
+        Importar backup
+        <input type="file" accept=".json,application/json" (change)="importBackup($event)" />
+      </label>
+      <button type="button" (click)="openBackupHelp()">Como usar</button>
+      <button type="button" (click)="openReport()">Relatório</button>
+    </div>
+    @if (importMessage()) {
+      <p class="import-message">{{ importMessage() }}</p>
+    }
+    <small>Versao {{ appVersion }}</small>
+  </footer>
+
+  @if (backupHelpOpen()) {
+    <section class="modal-backdrop" aria-label="Ajuda de backup">
+      <article class="modal-card">
+        <header>
+          <h2>Backup dos dados</h2>
+          <button type="button" (click)="closeModals()" aria-label="Fechar">×</button>
+        </header>
+        <div class="modal-content">
+          <p>Use o backup para levar seus dados para outro celular ou navegador.</p>
+          <ol>
+            <li>Clique em Exportar backup para baixar um arquivo JSON.</li>
+            <li>Guarde esse arquivo em um lugar seguro, como Google Drive ou computador.</li>
+            <li>No outro dispositivo, abra o Sattva e clique em Importar backup.</li>
+            <li>Escolha o arquivo JSON salvo anteriormente.</li>
+          </ol>
+          <p>Ao importar, os dados atuais deste navegador serão substituidos pelo arquivo escolhido.</p>
+        </div>
+      </article>
+    </section>
+  }
+
+  @if (reportOpen()) {
+    <section class="modal-backdrop" aria-label="Relatorio de gastos">
+      <article class="modal-card modal-card--wide">
+        <header>
+          <h2>Relatório</h2>
+          <button type="button" (click)="closeModals()" aria-label="Fechar">×</button>
+        </header>
+        <div class="report-actions">
+          <button type="button" (click)="copyReport()">Copiar</button>
+          <button type="button" (click)="printReport()">Imprimir</button>
+        </div>
+        <textarea class="report-text" readonly [value]="reportText()"></textarea>
+      </article>
+    </section>
+  }
+
+  <pre class="print-report">{{ reportText() }}</pre>
+</main>
