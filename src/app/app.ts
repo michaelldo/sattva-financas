@@ -22,7 +22,7 @@ export class App {
   private readonly formBuilder = inject(FormBuilder);
   private readonly walletStorage = inject(WalletStorageService);
 
-  readonly appVersion = '2.0.0';
+  readonly appVersion = '2.0.1';
   readonly currentMonth = signal(this.getCurrentMonth());
   readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
