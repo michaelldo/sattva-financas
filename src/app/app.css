@@ -364,7 +364,7 @@ form > button {
 }
 
 .entry-list .status-badge {
-  width: auto;
+  width: min-content !important;
   height: auto;
   min-height: 24px;
   border-radius: 999px;
@@ -375,6 +375,10 @@ form > button {
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .entry-list .status-badge.is-paid {
