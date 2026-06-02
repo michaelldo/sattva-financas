@@ -7,6 +7,9 @@ export interface WalletEntry {
   value: number;
   month: string;
   createdAt: string;
+  paid?: boolean;
+  paidMonths?: Record<string, boolean>;
+  deletedFromMonth?: string;
   installment?: {
     groupId: string;
     current: number;

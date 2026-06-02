@@ -1,9 +1,12 @@
 import { CurrencyPipe, DatePipe, NgClass } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { filter } from 'rxjs';
 import { WalletEntry, WalletSummary, TransactionKind } from './wallet.models';
 import { WalletStorageService } from './wallet-storage.service';
 import { RealMask } from './real-mask';
+import { createId } from './id-generator';
 
 type SectionKey = 'income' | 'fixed' | 'variable' | 'saving';
 
@@ -21,6 +24,7 @@ interface MonthOption {
 export class App {
   private readonly formBuilder = inject(FormBuilder);
   private readonly walletStorage = inject(WalletStorageService);
+  private readonly swUpdate = inject(SwUpdate, { optional: true });
 
   readonly appVersion = '2.0.1';
   readonly currentMonth = signal(this.getCurrentMonth());
@@ -43,7 +47,7 @@ export class App {
 
   readonly selectedMonthEntries = computed(() =>
     this.entries()
-      .filter((entry) => entry.kind === 'fixed-expense' || entry.month === this.currentMonth())
+      .filter((entry) => this.isEntryVisibleInCurrentMonth(entry))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
 
@@ -85,6 +89,18 @@ export class App {
 
   readonly reportText = computed(() => this.buildReport());
 
+  constructor() {
+    const swUpdate = this.swUpdate;
+
+    if (!swUpdate?.isEnabled) {
+      return;
+    }
+
+    swUpdate.versionUpdates
+      .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))
+      .subscribe(() => window.location.reload());
+  }
+
   addIncome(): void {
     this.addSimpleEntry('income', this.incomeForm);
   }
@@ -105,7 +121,7 @@ export class App {
 
     const { description, value, isInstallment, installments } = this.variableExpenseForm.getRawValue();
     const totalInstallments = isInstallment ? installments || 1 : 1;
-    const groupId = crypto.randomUUID();
+    const groupId = createId();
     const installmentValue = Number(((value ?? 0) / totalInstallments).toFixed(2));
     const entries = Array.from({ length: totalInstallments }, (_, index) => ({
       kind: 'variable-expense' as const,
@@ -125,7 +141,19 @@ export class App {
   }
 
   removeEntry(id: string): void {
-    this.walletStorage.remove(id);
+    this.walletStorage.remove(id, this.currentMonth());
+  }
+
+  togglePaidStatus(entry: WalletEntry): void {
+    this.walletStorage.togglePaid(entry.id, this.currentMonth());
+  }
+
+  isEntryPaid(entry: WalletEntry): boolean {
+    if (entry.kind === 'fixed-expense') {
+      return Boolean(entry.paidMonths?.[this.currentMonth()]);
+    }
+
+    return Boolean(entry.paid);
   }
 
   exportBackup(): void {
@@ -248,6 +276,14 @@ export class App {
       .reduce((sum, entry) => sum + entry.value, 0);
   }
 
+  private isEntryVisibleInCurrentMonth(entry: WalletEntry): boolean {
+    if (entry.kind !== 'fixed-expense') {
+      return entry.month === this.currentMonth();
+    }
+
+    return entry.month <= this.currentMonth() && (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth);
+  }
+
   private getCurrentMonth(): string {
     return new Date().toISOString().slice(0, 7);
   }
@@ -351,17 +387,24 @@ export class App {
     const kind = this.isTransactionKind(entry.kind) ? entry.kind : 'variable-expense';
 
     return {
-      id: entry.id || crypto.randomUUID(),
+      id: entry.id || createId(),
       kind,
       description: String(entry.description ?? ''),
       value: Number(entry.value ?? 0),
       month: String(entry.month ?? this.getCurrentMonth()),
       createdAt: String(entry.createdAt ?? new Date().toISOString()),
+      paid: kind === 'variable-expense' ? Boolean(entry.paid) : undefined,
+      paidMonths: kind === 'fixed-expense' ? entry.paidMonths ?? (entry.paid ? { [entry.month]: true } : {}) : undefined,
+      deletedFromMonth: kind === 'fixed-expense' ? entry.deletedFromMonth : undefined,
       installment: entry.installment,
     };
   }
 
   private isTransactionKind(kind: string): kind is TransactionKind {
     return ['income', 'fixed-expense', 'variable-expense', 'saving'].includes(kind);
+  }
+
+  private supportsPaidStatus(kind: TransactionKind): boolean {
+    return kind === 'fixed-expense' || kind === 'variable-expense';
   }
 }
