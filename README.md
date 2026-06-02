@@ -8,8 +8,11 @@ Aplicativo web para controle simples de finanças pessoais, com lançamentos por
 ![Tests](https://img.shields.io/badge/Tests-Vitest-6E9F18)
 ![License](https://img.shields.io/badge/license-private-lightgrey)
 
-## Acesso
+## Utilize o Sattiva Finanças
 
+👉 **Acesse:** https://sattva-financas.netlify.app/
+
+[![Abrir Aplicação](https://img.shields.io/badge/Acessar%20Aplicação-Online-success?style=for-the-badge&logo=netlify)](https://sattva-financas.netlify.app/)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/35265018-4287-4e8f-90c2-951ccac583b5/deploy-status)](https://app.netlify.com/projects/sattva-financas/deploys)
 
 ## Visão geral
