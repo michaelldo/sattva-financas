@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { WalletEntry } from './wallet.models';
+import { createId } from './id-generator';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
 
@@ -12,8 +13,10 @@ export class WalletStorageService {
   add(entry: Omit<WalletEntry, 'id' | 'createdAt'>): void {
     const newEntry: WalletEntry = {
       ...entry,
-      id: crypto.randomUUID(),
+      id: createId(),
       createdAt: new Date().toISOString(),
+      paid: entry.kind === 'variable-expense' ? false : undefined,
+      paidMonths: entry.kind === 'fixed-expense' ? {} : undefined,
     };
 
     this.save([...this.entriesSignal(), newEntry]);
@@ -23,14 +26,16 @@ export class WalletStorageService {
     const now = new Date().toISOString();
     const newEntries = entries.map((entry) => ({
       ...entry,
-      id: crypto.randomUUID(),
+      id: createId(),
       createdAt: now,
+      paid: entry.kind === 'variable-expense' ? false : undefined,
+      paidMonths: entry.kind === 'fixed-expense' ? {} : undefined,
     }));
 
     this.save([...this.entriesSignal(), ...newEntries]);
   }
 
-  remove(id: string): void {
+  remove(id: string, month: string): void {
     const entries = this.entriesSignal();
     const entryToRemove = entries.find((entry) => entry.id === id);
 
@@ -38,7 +43,47 @@ export class WalletStorageService {
       return;
     }
 
+    if (entryToRemove.kind === 'fixed-expense') {
+      this.save(entries.map((entry) => {
+        if (entry.id !== id) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          deletedFromMonth: month,
+        };
+      }));
+      return;
+    }
+
     this.save(entries.filter((entry) => !this.shouldRemoveEntry(entry, entryToRemove)));
+  }
+
+  togglePaid(id: string, month: string): void {
+    this.save(this.entriesSignal().map((entry) => {
+      if (entry.id !== id || !this.supportsPaidStatus(entry.kind)) {
+        return entry;
+      }
+
+      if (entry.kind === 'fixed-expense') {
+        const paidMonths = entry.paidMonths ?? {};
+
+        return {
+          ...entry,
+          paid: undefined,
+          paidMonths: {
+            ...paidMonths,
+            [month]: !paidMonths[month],
+          },
+        };
+      }
+
+      return {
+        ...entry,
+        paid: !entry.paid,
+      };
+    }));
   }
 
   clearAll(): void {
@@ -54,6 +99,10 @@ export class WalletStorageService {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   }
 
+  private supportsPaidStatus(kind: WalletEntry['kind']): boolean {
+    return kind === 'fixed-expense' || kind === 'variable-expense';
+  }
+
   private readEntries(): WalletEntry[] {
     const rawEntries = localStorage.getItem(STORAGE_KEY);
 
@@ -62,10 +111,36 @@ export class WalletStorageService {
     }
 
     try {
-      return JSON.parse(rawEntries) as WalletEntry[];
+      return (JSON.parse(rawEntries) as WalletEntry[]).map((entry) => this.normalizeStoredEntry(entry));
     } catch {
       return [];
     }
+  }
+
+  private normalizeStoredEntry(entry: WalletEntry): WalletEntry {
+    if (entry.kind === 'fixed-expense') {
+      return {
+        ...entry,
+        paid: undefined,
+        paidMonths: entry.paidMonths ?? (entry.paid ? { [entry.month]: true } : {}),
+        deletedFromMonth: entry.deletedFromMonth,
+      };
+    }
+
+    if (entry.kind === 'variable-expense') {
+      return {
+        ...entry,
+        paid: Boolean(entry.paid),
+        paidMonths: undefined,
+      };
+    }
+
+    return {
+      ...entry,
+      paid: undefined,
+      paidMonths: undefined,
+      deletedFromMonth: undefined,
+    };
   }
 
   private shouldRemoveEntry(entry: WalletEntry, entryToRemove: WalletEntry): boolean {
@@ -121,7 +196,7 @@ export class WalletStorageService {
 
     const migratedEntries: WalletEntry[] = [
       ...legacyIncome.map((entry) => ({
-        id: crypto.randomUUID(),
+        id: createId(),
         kind: 'income' as const,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
@@ -129,24 +204,26 @@ export class WalletStorageService {
         createdAt: now,
       })),
       ...legacyFixedExpenses.map((entry) => ({
-        id: crypto.randomUUID(),
+        id: createId(),
         kind: 'fixed-expense' as const,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
         month: currentMonth,
         createdAt: now,
+        paidMonths: {},
       })),
       ...legacyVariableExpenses.map((entry) => {
         const description = String(entry['nome'] ?? '');
         const legacyInstallment = this.parseLegacyInstallment(description);
 
         return {
-          id: crypto.randomUUID(),
+          id: createId(),
           kind: 'variable-expense' as const,
           description,
           value: Number(entry['valor'] ?? 0),
           month: String(entry['mes'] ?? currentMonth),
           createdAt: now,
+          paid: false,
           installment: legacyInstallment
             ? {
                 groupId: `${legacyInstallment.baseName}-${legacyInstallment.total}`,

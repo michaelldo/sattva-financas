@@ -94,15 +94,27 @@
       </form>
 
       <button class="list-toggle" type="button" (click)="toggleList('variable')" aria-label="Mostrar gastos variaveis">
-        <span>{{ entriesByKind('variable-expense').length }} lançamentos</span>
-        <span>⌄</span>
+        <span>
+          {{ entriesByKind('variable-expense').length }}
+          {{ entriesByKind('variable-expense').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
+        </span>
+        <span>{{ visibleLists().variable ? 'X' : '☰' }}</span>
       </button>
 
       @if (visibleLists().variable) {
         <ul class="entry-list">
           @for (entry of entriesByKind('variable-expense'); track entry.id) {
-            <li>
+            <li class="has-status">
               <span>{{ entry.description }}</span>
+              <button
+                class="status-badge"
+                type="button"
+                [class.is-paid]="isEntryPaid(entry)"
+                (click)="togglePaidStatus(entry)"
+                [attr.aria-label]="isEntryPaid(entry) ? 'Marcar gasto variavel como nao pago' : 'Marcar gasto variavel como pago'"
+              >
+                {{ isEntryPaid(entry) ? 'Pago' : 'Não pago' }}
+              </button>
               <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
               <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto variavel">×</button>
             </li>
@@ -126,15 +138,27 @@
       </form>
 
       <button class="list-toggle" type="button" (click)="toggleList('fixed')" aria-label="Mostrar gastos fixos">
-        <span>{{ entriesByKind('fixed-expense').length }} lançamentos</span>
-        <span>⌄</span>
+        <span>
+          {{ entriesByKind('fixed-expense').length }}
+          {{ entriesByKind('fixed-expense').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
+        </span>
+        <span>{{ visibleLists().fixed ? 'X' : '☰' }}</span>
       </button>
 
       @if (visibleLists().fixed) {
         <ul class="entry-list">
           @for (entry of entriesByKind('fixed-expense'); track entry.id) {
-            <li>
+            <li class="has-status">
               <span>{{ entry.description }}</span>
+              <button
+                class="status-badge"
+                type="button"
+                [class.is-paid]="isEntryPaid(entry)"
+                (click)="togglePaidStatus(entry)"
+                [attr.aria-label]="isEntryPaid(entry) ? 'Marcar gasto fixo como nao pago' : 'Marcar gasto fixo como pago'"
+              >
+                {{ isEntryPaid(entry) ? 'Pago' : 'Não pago' }}
+              </button>
               <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
               <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto fixo">×</button>
             </li>
@@ -158,8 +182,11 @@
       </form>
 
       <button class="list-toggle" type="button" (click)="toggleList('income')" aria-label="Mostrar rendas">
-        <span>{{ entriesByKind('income').length }} lançamentos</span>
-        <span>⌄</span>
+        <span>
+          {{ entriesByKind('income').length }}
+          {{ entriesByKind('income').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
+        </span>
+        <span>{{ visibleLists().income ? 'X' : '☰' }}</span>
       </button>
 
       @if (visibleLists().income) {
@@ -217,8 +244,11 @@
       </form>
 
       <button class="list-toggle" type="button" (click)="toggleList('saving')" aria-label="Mostrar cofrinho">
-        <span>{{ entriesByKind('saving').length }} lancamentos</span>
-        <span>⌄</span>
+        <span>
+          {{ entriesByKind('saving').length }}
+          {{ entriesByKind('saving').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
+        </span>
+        <span>{{ visibleLists().saving ? 'X' : '☰' }}</span>
       </button>
 
       @if (visibleLists().saving) {
