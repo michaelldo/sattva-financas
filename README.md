@@ -18,7 +18,7 @@ O Sattva Finanças é uma aplicação Angular standalone focada no uso pessoal e
 
 ## UX/UI e Design
 
-A experiência de usuário (UX) e a interface (UI) do Sattiva Finanças foram desenvolvidas em parceria com **[Nome da Pessoa]**, responsável pela concepção dos fluxos de navegação, identidade visual e protótipos criados no Figma.
+A experiência de usuário (UX) e a interface (UI) do Sattiva Finanças foram desenvolvidas em parceria com **[Jaqueline Lima](https://github.com/jaquelinelima2)**, responsável pela concepção dos fluxos de navegação, identidade visual e protótipos criados no Figma.
 
 O processo de desenvolvimento foi baseado nos protótipos e estudos realizados no Figma, buscando uma experiência simples, intuitiva e focada no uso cotidiano do controle financeiro pessoal.
 
