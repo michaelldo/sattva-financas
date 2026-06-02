@@ -1,3 +1,4 @@
+# Sattiva Finanças
 
 Aplicativo web para controle simples de finanças pessoais, com lançamentos por mês, gastos parcelados, cofrinho, resumo mensal, relatório, backup local e suporte a PWA.
 
@@ -7,9 +8,22 @@ Aplicativo web para controle simples de finanças pessoais, com lançamentos por
 ![Tests](https://img.shields.io/badge/Tests-Vitest-6E9F18)
 ![License](https://img.shields.io/badge/license-private-lightgrey)
 
+## Utilize o Sattiva Finanças
+
+**Acesse:** https://sattva-financas.netlify.app/
+
+**Status:**
+[![Netlify Status](https://api.netlify.com/api/v1/badges/35265018-4287-4e8f-90c2-951ccac583b5/deploy-status)](https://app.netlify.com/projects/sattva-financas/deploys)
+
 ## Visão geral
 
 O Sattva Finanças é uma aplicação Angular standalone focada no uso pessoal e direto no navegador. Os dados ficam salvos no `localStorage`, podem ser exportados/importados em JSON e a build de produção registra um service worker para entregar uma experiência instalável e mais estável como PWA.
+
+## UX/UI e Design
+
+A experiência de usuário (UX) e a interface (UI) do Sattiva Finanças foram desenvolvidas em parceria com **[Jaqueline Lima](https://github.com/jaquelinelima2)**, responsável pela concepção dos fluxos de navegação, identidade visual e protótipos criados no Figma.
+
+O processo de desenvolvimento foi baseado nos protótipos e estudos realizados no Figma, buscando uma experiência simples, intuitiva e focada no uso cotidiano do controle financeiro pessoal.
 
 ### Funcionalidades
   
