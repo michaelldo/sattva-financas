@@ -336,16 +336,40 @@ form > button {
 }
 
 .entry-list li {
-  display: grid;
+  display: flex;
   grid-template-columns: minmax(0, 1fr) auto 28px;
   align-items: center;
   gap: 8px;
   padding: 8px 0;
   border-top: 1px solid rgb(20 29 35 / 12%);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .entry-list li.has-status {
-  grid-template-columns: minmax(0, 1fr) auto auto 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.entry-list li span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-list .status-badge,
+.entry-list strong,
+.entry-list button:last-child {
+  flex-shrink: 0;
+}
+
+.entry-list .status-badge.is-paid {
+  background: #2e9d62;
 }
 
 .saving-card .entry-list li {
@@ -364,25 +388,22 @@ form > button {
 }
 
 .entry-list .status-badge {
-  width: min-content !important;
-  height: auto;
-  min-height: 24px;
-  border-radius: 999px;
-  background: #d84646;
-  color: #ffffff;
-  padding: 4px 9px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.entry-list .status-badge.is-paid {
-  background: #2e9d62;
+  min-height: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: #d84646;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto;
 }
 
 .lower-grid {
@@ -575,7 +596,10 @@ dd {
   background: #ffffff;
   color: #141d23;
   padding: 16px;
-  font: 0.95rem/1.55 Consolas, 'Courier New', monospace;
+  font:
+    0.95rem/1.55 Consolas,
+    'Courier New',
+    monospace;
 }
 
 .print-report {
@@ -707,7 +731,9 @@ dd {
     display: block;
     color: #000000;
     white-space: pre-wrap;
-    font: 12pt/1.45 Consolas, 'Courier New', monospace;
+    font:
+      12pt/1.45 Consolas,
+      'Courier New',
+      monospace;
   }
-
 }
