@@ -26,7 +26,7 @@ export class App {
   private readonly walletStorage = inject(WalletStorageService);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
 
-  readonly appVersion = '2.0.1';
+  readonly appVersion = '2.1.0';
   readonly currentMonth = signal(this.getCurrentMonth());
   readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
