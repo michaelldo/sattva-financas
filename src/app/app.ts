@@ -26,7 +26,7 @@ export class App {
   private readonly walletStorage = inject(WalletStorageService);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
 
-  readonly appVersion = '2.1.0';
+  readonly appVersion = '2.2.0';
   readonly currentMonth = signal(this.getCurrentMonth());
   readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
@@ -110,7 +110,19 @@ export class App {
   }
 
   addSaving(): void {
-    this.addSimpleEntry('saving', this.savingForm);
+    if (this.savingForm.invalid) {
+      this.savingForm.markAllAsTouched();
+      return;
+    }
+
+    const { description, value } = this.savingForm.getRawValue();
+    this.walletStorage.addOrUpdateSaving({
+      kind: 'saving',
+      description: description ?? '',
+      value: Number(value),
+      month: this.currentMonth(),
+    });
+    this.savingForm.reset({ description: '', value: null });
   }
 
   addVariableExpense(): void {

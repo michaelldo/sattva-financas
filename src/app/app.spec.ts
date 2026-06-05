@@ -146,4 +146,21 @@ describe('App', () => {
 
     expect(app.entriesByKind('saving')[0].paid).toBeUndefined();
   });
+
+  it('should add to existing saving when same name is provided', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.savingForm.setValue({ description: 'Computador', value: 500 });
+    app.addSaving();
+
+    expect(app.entriesByKind('saving').length).toBe(1);
+    expect(app.entriesByKind('saving')[0].value).toBe(500);
+
+    app.savingForm.setValue({ description: 'computador', value: 50 });
+    app.addSaving();
+
+    expect(app.entriesByKind('saving').length).toBe(1);
+    expect(app.entriesByKind('saving')[0].value).toBe(550);
+  });
 });

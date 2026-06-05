@@ -35,6 +35,42 @@ export class WalletStorageService {
     this.save([...this.entriesSignal(), ...newEntries]);
   }
 
+  addOrUpdateSaving(entry: Omit<WalletEntry, 'id' | 'createdAt'>): void {
+    const normalizedDescription = this.normalizeDescription(entry.description);
+    const existingEntry = this.entriesSignal().find(
+      (e) =>
+        e.kind === 'saving' &&
+        e.month === entry.month &&
+        this.normalizeDescription(e.description) === normalizedDescription,
+    );
+
+    if (existingEntry) {
+      this.update(existingEntry.id, { value: existingEntry.value + entry.value });
+    } else {
+      this.add(entry);
+    }
+  }
+
+  update(id: string, entry: Partial<WalletEntry>): void {
+    this.save(
+      this.entriesSignal().map((e) => {
+        if (e.id !== id) {
+          return e;
+        }
+        return { ...e, ...entry };
+      }),
+    );
+  }
+
+  private normalizeDescription(description: string): string {
+    return description
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s]/gi, '')
+      .toLowerCase()
+      .trim();
+  }
+
   remove(id: string, month: string): void {
     const entries = this.entriesSignal();
     const entryToRemove = entries.find((entry) => entry.id === id);
