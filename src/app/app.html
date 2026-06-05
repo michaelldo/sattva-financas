@@ -76,7 +76,7 @@
         </label>
         <label>
           R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask/>
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
         </label>
         @if (variableExpenseForm.controls.isInstallment.value) {
           <label>
@@ -128,7 +128,7 @@
       <form [formGroup]="fixedExpenseForm" (ngSubmit)="addFixedExpense()">
         <label>
           Descrição:
-          <input type="text" formControlName="description" placeholder="Internet"/>
+          <input type="text" formControlName="description" placeholder="Internet" />
         </label>
         <label>
           R$:
@@ -234,11 +234,11 @@
       <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
         <label>
           Descrição
-          <input type="text" formControlName="description" placeholder="Viagem"/>
+          <input type="text" formControlName="description" placeholder="Viagem" />
         </label>
         <label>
           R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask/>
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
         </label>
         <button type="submit">Adicionar</button>
       </form>

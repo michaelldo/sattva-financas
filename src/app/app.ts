@@ -3,7 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { WalletEntry, WalletSummary, TransactionKind } from './wallet.models';
+import { TransactionKind, WalletEntry, WalletSummary } from './wallet.models';
 import { WalletStorageService } from './wallet-storage.service';
 import { RealMask } from './real-mask';
 import { createId } from './id-generator';
@@ -19,7 +19,7 @@ interface MonthOption {
   selector: 'app-root',
   imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
   private readonly formBuilder = inject(FormBuilder);
@@ -119,16 +119,23 @@ export class App {
       return;
     }
 
-    const { description, value, isInstallment, installments } = this.variableExpenseForm.getRawValue();
+    const { description, value, isInstallment, installments } =
+      this.variableExpenseForm.getRawValue();
     const totalInstallments = isInstallment ? installments || 1 : 1;
     const groupId = createId();
     const installmentValue = Number(((value ?? 0) / totalInstallments).toFixed(2));
     const entries = Array.from({ length: totalInstallments }, (_, index) => ({
       kind: 'variable-expense' as const,
-      description: totalInstallments > 1 ? `${description} Parc.:${index + 1}/${totalInstallments}` : description ?? '',
+      description:
+        totalInstallments > 1
+          ? `${description} Parc.:${index + 1}/${totalInstallments}`
+          : (description ?? ''),
       value: installmentValue,
       month: this.addMonths(this.currentMonth(), index),
-      installment: totalInstallments > 1 ? { groupId, current: index + 1, total: totalInstallments } : undefined,
+      installment:
+        totalInstallments > 1
+          ? { groupId, current: index + 1, total: totalInstallments }
+          : undefined,
     }));
 
     this.walletStorage.addMany(entries);
@@ -244,10 +251,7 @@ export class App {
     this.reportOpen.set(false);
   }
 
-  private addSimpleEntry(
-    kind: TransactionKind,
-    form: FormGroup,
-  ): void {
+  private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
     if (form.invalid) {
       form.markAllAsTouched();
       return;
@@ -281,7 +285,10 @@ export class App {
       return entry.month === this.currentMonth();
     }
 
-    return entry.month <= this.currentMonth() && (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth);
+    return (
+      entry.month <= this.currentMonth() &&
+      (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
+    );
   }
 
   private getCurrentMonth(): string {
@@ -394,7 +401,10 @@ export class App {
       month: String(entry.month ?? this.getCurrentMonth()),
       createdAt: String(entry.createdAt ?? new Date().toISOString()),
       paid: kind === 'variable-expense' ? Boolean(entry.paid) : undefined,
-      paidMonths: kind === 'fixed-expense' ? entry.paidMonths ?? (entry.paid ? { [entry.month]: true } : {}) : undefined,
+      paidMonths:
+        kind === 'fixed-expense'
+          ? (entry.paidMonths ?? (entry.paid ? { [entry.month]: true } : {}))
+          : undefined,
       deletedFromMonth: kind === 'fixed-expense' ? entry.deletedFromMonth : undefined,
       installment: entry.installment,
     };

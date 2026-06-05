@@ -596,10 +596,9 @@ dd {
   background: #ffffff;
   color: #141d23;
   padding: 16px;
-  font:
-    0.95rem/1.55 Consolas,
-    'Courier New',
-    monospace;
+  font: 0.95rem/1.55 Consolas,
+  'Courier New',
+  monospace;
 }
 
 .print-report {
@@ -731,9 +730,8 @@ dd {
     display: block;
     color: #000000;
     white-space: pre-wrap;
-    font:
-      12pt/1.45 Consolas,
-      'Courier New',
-      monospace;
+    font: 12pt/1.45 Consolas,
+    'Courier New',
+    monospace;
   }
 }

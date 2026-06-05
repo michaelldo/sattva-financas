@@ -3,10 +3,10 @@ import { NgControl } from '@angular/forms';
 
 @Directive({
   selector: '[appRealMask]',
-  standalone: true
+  standalone: true,
 })
 export class RealMask {
-    // Injeta o controle do formulário associado ao input (formControlName)
+  // Injeta o controle do formulário associado ao input (formControlName)
   constructor(@Self() private ngControl: NgControl) {}
 
   @HostListener('input', ['$event'])
@@ -16,27 +16,27 @@ export class RealMask {
 
     let value = input.value;
 
-    value = value.replace(/\D/g, "");
+    value = value.replace(/\D/g, '');
 
     if (!value) {
-      this.ngControl.control?.setValue(null, { emitEvent: false});
+      this.ngControl.control?.setValue(null, { emitEvent: false });
       input.value = '';
       return;
     }
 
     const numberValue = Number(value) / 100;
 
-    this.ngControl.control?.setValue(numberValue, {emitEvent: false});
+    this.ngControl.control?.setValue(numberValue, { emitEvent: false });
     this.ngControl.control?.markAsDirty();
     this.ngControl.control?.markAsTouched();
 
     const fomatted = new Intl.NumberFormat('pt-BR', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(numberValue);
 
     setTimeout(() => {
       input.value = fomatted;
-    })
+    });
   }
 }
