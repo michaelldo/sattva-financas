@@ -35,6 +35,42 @@ export class WalletStorageService {
     this.save([...this.entriesSignal(), ...newEntries]);
   }
 
+  addOrUpdateSaving(entry: Omit<WalletEntry, 'id' | 'createdAt'>): void {
+    const normalizedDescription = this.normalizeDescription(entry.description);
+    const existingEntry = this.entriesSignal().find(
+      (e) =>
+        e.kind === 'saving' &&
+        e.month === entry.month &&
+        this.normalizeDescription(e.description) === normalizedDescription,
+    );
+
+    if (existingEntry) {
+      this.update(existingEntry.id, { value: existingEntry.value + entry.value });
+    } else {
+      this.add(entry);
+    }
+  }
+
+  update(id: string, entry: Partial<WalletEntry>): void {
+    this.save(
+      this.entriesSignal().map((e) => {
+        if (e.id !== id) {
+          return e;
+        }
+        return { ...e, ...entry };
+      }),
+    );
+  }
+
+  private normalizeDescription(description: string): string {
+    return description
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s]/gi, '')
+      .toLowerCase()
+      .trim();
+  }
+
   remove(id: string, month: string): void {
     const entries = this.entriesSignal();
     const entryToRemove = entries.find((entry) => entry.id === id);
@@ -44,16 +80,18 @@ export class WalletStorageService {
     }
 
     if (entryToRemove.kind === 'fixed-expense') {
-      this.save(entries.map((entry) => {
-        if (entry.id !== id) {
-          return entry;
-        }
+      this.save(
+        entries.map((entry) => {
+          if (entry.id !== id) {
+            return entry;
+          }
 
-        return {
-          ...entry,
-          deletedFromMonth: month,
-        };
-      }));
+          return {
+            ...entry,
+            deletedFromMonth: month,
+          };
+        }),
+      );
       return;
     }
 
@@ -61,29 +99,31 @@ export class WalletStorageService {
   }
 
   togglePaid(id: string, month: string): void {
-    this.save(this.entriesSignal().map((entry) => {
-      if (entry.id !== id || !this.supportsPaidStatus(entry.kind)) {
-        return entry;
-      }
+    this.save(
+      this.entriesSignal().map((entry) => {
+        if (entry.id !== id || !this.supportsPaidStatus(entry.kind)) {
+          return entry;
+        }
 
-      if (entry.kind === 'fixed-expense') {
-        const paidMonths = entry.paidMonths ?? {};
+        if (entry.kind === 'fixed-expense') {
+          const paidMonths = entry.paidMonths ?? {};
+
+          return {
+            ...entry,
+            paid: undefined,
+            paidMonths: {
+              ...paidMonths,
+              [month]: !paidMonths[month],
+            },
+          };
+        }
 
         return {
           ...entry,
-          paid: undefined,
-          paidMonths: {
-            ...paidMonths,
-            [month]: !paidMonths[month],
-          },
+          paid: !entry.paid,
         };
-      }
-
-      return {
-        ...entry,
-        paid: !entry.paid,
-      };
-    }));
+      }),
+    );
   }
 
   clearAll(): void {
@@ -111,7 +151,9 @@ export class WalletStorageService {
     }
 
     try {
-      return (JSON.parse(rawEntries) as WalletEntry[]).map((entry) => this.normalizeStoredEntry(entry));
+      return (JSON.parse(rawEntries) as WalletEntry[]).map((entry) =>
+        this.normalizeStoredEntry(entry),
+      );
     } catch {
       return [];
     }
@@ -171,9 +213,9 @@ export class WalletStorageService {
     );
   }
 
-  private parseLegacyInstallment(description: string):
-    | { baseName: string; current: number; total: number }
-    | undefined {
+  private parseLegacyInstallment(
+    description: string,
+  ): { baseName: string; current: number; total: number } | undefined {
     const match = description.match(/^(.*)\s+Parc\.:(\d+)\/(\d+)$/i);
 
     if (!match) {
