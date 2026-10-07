@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
 import { addMonths, getCurrentMonth, monthKeyToDate} from './core/utils/month.utils';
-import { aplitIntoInstallments } from './core/utils/installments';
+import { splitIntoInstallments } from './core/utils/installments';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
@@ -137,7 +137,7 @@ export class App {
       this.variableExpenseForm.getRawValue();
     const totalInstallments = isInstallment ? installments || 1 : 1;
     const groupId = createId();
-    const installmentValues = aplitIntoInstallments(value ?? 0, totalInstallments);
+    const installmentValues = splitIntoInstallments(value ?? 0, totalInstallments);
     const entries = Array.from({ length: totalInstallments }, (_, index) => ({
       kind: 'variable-expense' as const,
       description:

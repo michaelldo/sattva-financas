@@ -1,4 +1,4 @@
-export function aplitIntoInstallments(total: number, count: number): number[]{
+export function splitIntoInstallments(total: number, count: number): number[]{
   const totalCents = Math.round(total * 100);
   const basecents = Math.floor(totalCents / count);
   const remainderCents = totalCents - basecents * count;
