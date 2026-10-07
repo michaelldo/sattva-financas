@@ -1,4 +1,4 @@
-import { RealMask } from './real-mask';
+import { RealMask } from './shared/directives/real-mask';
 import { NgControl } from '@angular/forms';
 
 describe('RealMask', () => {

@@ -3,9 +3,11 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { TransactionKind, WalletEntry, WalletSummary } from './wallet.models';
-import { WalletStorageService } from './wallet-storage.service';
-import { RealMask } from './real-mask';
+import { addMonths, getCurrentMonth, monthKeyToDate} from './core/utils/month.utils';
+import { aplitIntoInstallments } from './core/utils/installments';
+import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
+import { WalletStorageService } from './core/services/wallet-storage.service';
+import { RealMask } from './shared/directives/real-mask';
 import { createId } from './id-generator';
 
 type SectionKey = 'income' | 'fixed' | 'variable' | 'saving';
@@ -27,7 +29,7 @@ export class App {
   private readonly swUpdate = inject(SwUpdate, { optional: true });
 
   readonly appVersion = '2.2.0';
-  readonly currentMonth = signal(this.getCurrentMonth());
+  readonly currentMonth = signal(getCurrentMonth());
   readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
@@ -135,15 +137,15 @@ export class App {
       this.variableExpenseForm.getRawValue();
     const totalInstallments = isInstallment ? installments || 1 : 1;
     const groupId = createId();
-    const installmentValue = Number(((value ?? 0) / totalInstallments).toFixed(2));
+    const installmentValues = aplitIntoInstallments(value ?? 0, totalInstallments);
     const entries = Array.from({ length: totalInstallments }, (_, index) => ({
       kind: 'variable-expense' as const,
       description:
         totalInstallments > 1
           ? `${description} Parc.:${index + 1}/${totalInstallments}`
           : (description ?? ''),
-      value: installmentValue,
-      month: this.addMonths(this.currentMonth(), index),
+      value: installmentValues[index],
+      month: addMonths(this.currentMonth(), index),
       installment:
         totalInstallments > 1
           ? { groupId, current: index + 1, total: totalInstallments }
@@ -187,7 +189,7 @@ export class App {
     const link = document.createElement('a');
 
     link.href = url;
-    link.download = `sattva-backup-${this.getCurrentMonth()}.json`;
+    link.download = `sattva-backup-${getCurrentMonth()}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -303,18 +305,8 @@ export class App {
     );
   }
 
-  private getCurrentMonth(): string {
-    return new Date().toISOString().slice(0, 7);
-  }
-
-  private addMonths(month: string, offset: number): string {
-    const date = new Date(`${month}-01T00:00:00`);
-    date.setMonth(date.getMonth() + offset);
-    return date.toISOString().slice(0, 7);
-  }
-
   private formatMonthLabel(month: string): string {
-    const date = new Date(`${month}-01T00:00:00`);
+    const date = monthKeyToDate(month);
     return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
   }
 
@@ -410,7 +402,7 @@ export class App {
       kind,
       description: String(entry.description ?? ''),
       value: Number(entry.value ?? 0),
-      month: String(entry.month ?? this.getCurrentMonth()),
+      month: String(entry.month ?? getCurrentMonth()),
       createdAt: String(entry.createdAt ?? new Date().toISOString()),
       paid: kind === 'variable-expense' ? Boolean(entry.paid) : undefined,
       paidMonths:

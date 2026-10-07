@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
-import { WalletEntry } from './wallet.models';
-import { createId } from './id-generator';
+import { WalletEntry } from '../models/wallet.models';
+import { getCurrentMonth} from '../utils/month.utils';
+import { createId } from '../../id-generator';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
 
@@ -231,7 +232,7 @@ export class WalletStorageService {
 
   private migrateLegacyEntries(): WalletEntry[] {
     const now = new Date().toISOString();
-    const currentMonth = new Date().toISOString().slice(0, 7);
+    const currentMonth = getCurrentMonth();
     const legacyIncome = this.readLegacyList('rendas');
     const legacyFixedExpenses = this.readLegacyList('gastosFixos');
     const legacyVariableExpenses = this.readLegacyList('gastosVariaveis');
