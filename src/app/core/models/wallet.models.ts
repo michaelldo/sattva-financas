@@ -1,21 +1,40 @@
-export type TransactionKind = 'income' | 'fixed-expense' | 'variable-expense' | 'saving';
-
-export interface WalletEntry {
+interface BaseEntry {
   id: string;
-  kind: TransactionKind;
   description: string;
   value: number;
   month: string;
   createdAt: string;
-  paid?: boolean;
-  paidMonths?: Record<string, boolean>;
-  deletedFromMonth?: string;
-  installment?: {
-    groupId: string;
-    current: number;
-    total: number;
-  };
 }
+
+export interface IncomeEntry extends BaseEntry {
+  kind: 'income';
+}
+
+export interface SavingEntry extends BaseEntry {
+  kind: 'saving';
+}
+
+export interface FixedExpenseentry extends BaseEntry {
+  kind: 'fixed-expense';
+  paidMonths: Record<string, boolean>;
+  deletedFromMonth?: string;
+}
+
+export interface InstallmentInfo {
+  groupId: string;
+  current: number;
+  total: number;
+}
+
+export interface VariableExpenseEntry extends BaseEntry {
+  kind: 'variable-expense';
+  paid: boolean;
+  installment?: InstallmentInfo;
+}
+
+export type WalletEntry = IncomeEntry | SavingEntry | FixedExpenseentry | VariableExpenseEntry;
+
+export type TransactionKind = WalletEntry['kind'];
 
 export interface WalletSummary {
   income: number;

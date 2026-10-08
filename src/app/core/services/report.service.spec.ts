@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { ReportService } from './report.service';
-import { WalletEntry } from '../models/wallet.models';
+import { VariableExpenseEntry } from '../models/wallet.models';
 
-function entry(partial: Partial<WalletEntry>): WalletEntry {
+function entry(partial: Partial<VariableExpenseEntry>): VariableExpenseEntry {
   return {
     id: crypto.randomUUID(),
     kind: 'variable-expense',
+    paid: false,
     description: 'Teste',
     value: 10,
     month: '2026-10',

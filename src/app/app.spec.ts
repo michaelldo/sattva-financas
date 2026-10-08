@@ -50,13 +50,17 @@ describe('App', () => {
     });
     app.addVariableExpense();
 
-    const secondInstallment = app.entries().find((entry) => entry.installment?.current === 2);
+    const secondInstallment = app
+      .entries()
+      .find((entry) => entry.kind === 'variable-expense' && entry.installment?.current === 2);
 
     expect(secondInstallment).toBeTruthy();
 
     app.removeEntry(secondInstallment!.id);
 
-    expect(app.entries().map((entry) => entry.installment?.current)).toEqual([1]);
+    expect(
+      app.entries().map((entry) => entry.kind === 'variable-expense' && entry.installment?.current),
+    ).toEqual([1]);
   });
 
   it('should hide fixed expenses from the selected month forward when removed', () => {
@@ -144,7 +148,7 @@ describe('App', () => {
     app.savingForm.setValue({ description: 'Reserva', value: 300 });
     app.addSaving();
 
-    expect(app.entriesByKind('saving')[0].paid).toBeUndefined();
+    expect('paid' in app.entriesByKind('saving')[0]).toBe(false);
   });
 
   it('should add to existing saving when same name is provided', () => {
