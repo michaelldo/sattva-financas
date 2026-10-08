@@ -7,12 +7,12 @@ import { addMonths, formatMonthLabel, getCurrentMonth } from './core/utils/month
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import { splitIntoInstallments } from './core/utils/installments';
+import { isEntryPaidInMonth } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
 import { createId } from './id-generator';
-
-type SectionKey = 'income' | 'fixed' | 'variable' | 'saving';
+import { EntryCard } from './features/entry-card/entry-card';
 
 interface MonthOption {
   label: string;
@@ -21,7 +21,7 @@ interface MonthOption {
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask],
+  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask, EntryCard],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -71,13 +71,6 @@ export class App {
       savings,
       balance: income - fixedExpenses - variableExpenses - savings,
     };
-  });
-
-  readonly visibleLists = signal({
-    income: false,
-    fixed: false,
-    variable: false,
-    saving: false,
   });
 
   readonly selectedMonthLabel = computed(() => formatMonthLabel(this.currentMonth()));
@@ -181,11 +174,7 @@ export class App {
   }
 
   isEntryPaid(entry: WalletEntry): boolean {
-    if (entry.kind === 'fixed-expense') {
-      return Boolean(entry.paidMonths?.[this.currentMonth()]);
-    }
-
-    return Boolean(entry.paid);
+    return isEntryPaidInMonth(entry, this.currentMonth());
   }
 
   exportBackup(): void {
@@ -236,13 +225,6 @@ export class App {
 
   changeYear(offset: number): void {
     this.viewedYear.update((year) => year + offset);
-  }
-
-  toggleList(section: SectionKey): void {
-    this.visibleLists.update((current) => ({
-      ...current,
-      [section]: !current[section],
-    }));
   }
 
   entriesByKind(kind: TransactionKind): WalletEntry[] {

@@ -1,0 +1,48 @@
+<h2>{{ heading() }}</h2>
+
+<ng-content />
+
+<button
+  class="list-toggle"
+  type="button"
+  (click)="toggleList()"
+  [attr.aria-expanded]="listOpen()"
+  [attr.aria-label]="'Mostrar lista de ' + heading()">
+  <span>{{ countLabel() }}</span>
+  <span>{{ listOpen() ? '✕' : '☰' }}</span>
+</button>
+
+@if (listOpen()) {
+  <ul class="entry-list">
+    @for (entry of entries(); track entry.id) {
+      @let paid = paidIds().has(entry.id);
+      <li>
+        <span>{{ entry.description }}</span>
+
+        @if (showPaidStatus()) {
+          <button
+            class="status-badge"
+            type="button"
+            [class.is-paid]="paid"
+            (click)="togglePaid.emit(entry)"
+            [attr.aria-label]="(paid ?  'Marcar como não pago: ' : 'MArcar como pago: ') + entry.description"
+          >
+            {{ paid ? 'Pago' : 'Não pago' }}
+          </button>
+        }
+
+        <strong>{{ entry.value | currency }}</strong>
+        <button
+          class="remove-button"
+          type="button"
+          (click)="remove.emit(entry.id)"
+          [attr.aria-label]="'Remover ' + itemLabel() + ': ' + entry.description"
+        >
+          ✕
+        </button>
+      </li>
+    } @empty {
+      <li class="empty">Nenhum lançamento neste mês</li>
+    }
+  </ul>
+}
