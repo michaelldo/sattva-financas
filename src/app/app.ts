@@ -3,7 +3,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { addMonths, getCurrentMonth, monthKeyToDate} from './core/utils/month.utils';
+import { addMonths, formatMonthLabel, getCurrentMonth } from './core/utils/month.utils';
+import { BackupService } from './core/services/backup.service';
+import { ReportService } from './core/services/report.service';
 import { splitIntoInstallments } from './core/utils/installments';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
@@ -27,6 +29,8 @@ export class App {
   private readonly formBuilder = inject(FormBuilder);
   private readonly walletStorage = inject(WalletStorageService);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
+  private readonly backup = inject(BackupService);
+  private readonly report = inject(ReportService);
 
   readonly appVersion = '2.2.0';
   readonly currentMonth = signal(getCurrentMonth());
@@ -76,7 +80,7 @@ export class App {
     saving: false,
   });
 
-  readonly selectedMonthLabel = computed(() => this.formatMonthLabel(this.currentMonth()));
+  readonly selectedMonthLabel = computed(() => formatMonthLabel(this.currentMonth()));
 
   readonly monthOptions = computed<MonthOption[]>(() =>
     Array.from({ length: 12 }, (_, index) => {
@@ -89,7 +93,14 @@ export class App {
     }),
   );
 
-  readonly reportText = computed(() => this.buildReport());
+  readonly reportText = computed(() =>
+    this.report.build({
+      month: this.currentMonth(),
+      summary: this.summary(),
+      fixedEntries: this.entriesByKind('fixed-expense'),
+      allEntries: this.entries(),
+    }),
+  );
 
   constructor() {
     const swUpdate = this.swUpdate;
@@ -178,20 +189,7 @@ export class App {
   }
 
   exportBackup(): void {
-    const backup = {
-      app: 'sattva-financas',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      entries: this.entries(),
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-
-    link.href = url;
-    link.download = `sattva-backup-${getCurrentMonth()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    this.backup.download(this.entries());
   }
 
   async importBackup(event: Event): Promise<void> {
@@ -203,24 +201,23 @@ export class App {
     }
 
     try {
-      const backup = JSON.parse(await file.text()) as { entries?: WalletEntry[] } | WalletEntry[];
-      const entries = Array.isArray(backup) ? backup : backup.entries;
-
-      if (!Array.isArray(entries)) {
-        throw new Error('Arquivo invalido.');
-      }
-
-      this.walletStorage.replaceAll(entries.map((entry) => this.normalizeBackupEntry(entry)));
-      this.importMessage.set('Backup importado com sucesso.');
-    } catch {
-      this.importMessage.set('Nao foi possivel importar este arquivo.');
+      const entries = await this.backup.readFile(file);
+      this.walletStorage.replaceAll(entries);
+      this.importMessage.set('Backup importado com sucesso!');
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'Erro desconhecido';
+      this.importMessage.set(`Não foi possível importar este arquivo. ${reason}`);
     } finally {
       input.value = '';
     }
   }
 
   async copyReport(): Promise<void> {
-    await navigator.clipboard.writeText(this.reportText());
+    try {
+      await navigator.clipboard.writeText(this.reportText());
+    } catch {
+      this.importMessage.set(`Não foi possível copiar o relatório.`);
+    }
   }
 
   printReport(): void {
@@ -305,120 +302,8 @@ export class App {
     );
   }
 
-  private formatMonthLabel(month: string): string {
-    const date = monthKeyToDate(month);
-    return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
-  }
-
   private formatMonthName(monthIndex: number): string {
     const date = new Date(this.viewedYear(), monthIndex, 1);
     return new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
-  }
-
-  private buildReport(): string {
-    const summary = this.summary();
-    const fixedEntries = this.entriesByKind('fixed-expense');
-    const variableEntries = this.entries()
-      .filter((entry) => entry.kind === 'variable-expense')
-      .sort((a, b) => a.month.localeCompare(b.month) || a.createdAt.localeCompare(b.createdAt));
-    const savingEntries = this.entries()
-      .filter((entry) => entry.kind === 'saving')
-      .sort((a, b) => a.month.localeCompare(b.month) || a.createdAt.localeCompare(b.createdAt));
-    const variableMonths = this.groupByMonth(variableEntries);
-    const savingMonths = this.groupByMonth(savingEntries);
-    const lines = [
-      `Resumo - ${this.selectedMonthLabel()}`,
-      '├── Saldo',
-      `|   └── ${this.formatCurrency(summary.balance)}`,
-      '|',
-      '├── Entradas',
-      `|   └── ${this.formatCurrency(summary.income)}`,
-      '|',
-      '├── Gasto Fixo',
-      `|   ├── Total: ${this.formatCurrency(summary.fixedExpenses)}`,
-      ...this.formatEntryLines(fixedEntries, '|   '),
-      '|',
-      '├── Gasto variavel',
-      ...this.formatMonthGroups(variableMonths, '|   '),
-      '|',
-      '└── Cofrinho',
-      ...this.formatMonthGroups(savingMonths, '    '),
-    ];
-
-    return lines.join('\n');
-  }
-
-  private formatMonthGroups(groups: Map<string, WalletEntry[]>, prefix: string): string[] {
-    if (groups.size === 0) {
-      return [`${prefix}└── Nenhum lancamento`];
-    }
-
-    return Array.from(groups.entries()).flatMap(([month, entries], monthIndex, allMonths) => {
-      const isLastMonth = monthIndex === allMonths.length - 1;
-      const monthBranch = isLastMonth ? '└──' : '├──';
-      const childPrefix = `${prefix}${isLastMonth ? '    ' : '|   '}`;
-      const total = entries.reduce((sum, entry) => sum + entry.value, 0);
-
-      return [
-        `${prefix}${monthBranch} ${this.formatMonthLabel(month)}`,
-        `${childPrefix}├── Total: ${this.formatCurrency(total)}`,
-        ...this.formatEntryLines(entries, childPrefix),
-      ];
-    });
-  }
-
-  private formatEntryLines(entries: WalletEntry[], prefix: string): string[] {
-    if (entries.length === 0) {
-      return [`${prefix}└── Nenhum lancamento`];
-    }
-
-    return entries.map((entry, index) => {
-      const branch = index === entries.length - 1 ? '└──' : '├──';
-      return `${prefix}${branch} ${entry.description}: ${this.formatCurrency(entry.value)}`;
-    });
-  }
-
-  private groupByMonth(entries: WalletEntry[]): Map<string, WalletEntry[]> {
-    return entries.reduce((groups, entry) => {
-      const entriesForMonth = groups.get(entry.month) ?? [];
-      groups.set(entry.month, [...entriesForMonth, entry]);
-      return groups;
-    }, new Map<string, WalletEntry[]>());
-  }
-
-  private formatCurrency(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-    }).format(value);
-  }
-
-  private normalizeBackupEntry(entry: WalletEntry): WalletEntry {
-    const kind = this.isTransactionKind(entry.kind) ? entry.kind : 'variable-expense';
-
-    return {
-      id: entry.id || createId(),
-      kind,
-      description: String(entry.description ?? ''),
-      value: Number(entry.value ?? 0),
-      month: String(entry.month ?? getCurrentMonth()),
-      createdAt: String(entry.createdAt ?? new Date().toISOString()),
-      paid: kind === 'variable-expense' ? Boolean(entry.paid) : undefined,
-      paidMonths:
-        kind === 'fixed-expense'
-          ? (entry.paidMonths ?? (entry.paid ? { [entry.month]: true } : {}))
-          : undefined,
-      deletedFromMonth: kind === 'fixed-expense' ? entry.deletedFromMonth : undefined,
-      installment: entry.installment,
-    };
-  }
-
-  private isTransactionKind(kind: string): kind is TransactionKind {
-    return ['income', 'fixed-expense', 'variable-expense', 'saving'].includes(kind);
-  }
-
-  private supportsPaidStatus(kind: TransactionKind): boolean {
-    return kind === 'fixed-expense' || kind === 'variable-expense';
   }
 }
