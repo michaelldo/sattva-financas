@@ -28,7 +28,7 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
 
-  readonly appVersion = '2.3.0';
+  readonly appVersion = '2.3.1';
   readonly currentMonth = signal(getCurrentMonth());
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
