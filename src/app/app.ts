@@ -7,7 +7,7 @@ import { addMonths, getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import { splitIntoInstallments } from './core/utils/installments';
-import { isEntryPaidInMonth } from './core/utils/entry.utils';
+import { groupByKind, isEntryPaidInMonth, sumValues } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
@@ -52,13 +52,14 @@ export class App {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
 
-  readonly summary = computed<WalletSummary>(() => {
-    const monthEntries = this.selectedMonthEntries();
-    const income = this.sumByKind(monthEntries, 'income');
-    const fixedExpenses = this.sumByKind(monthEntries, 'fixed-expense');
-    const variableExpenses = this.sumByKind(monthEntries, 'variable-expense');
-    const savings = this.sumByKind(monthEntries, 'saving');
+  readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
 
+  readonly summary = computed<WalletSummary>(() => {
+    const groups = this.entriesByKind();
+    const income = sumValues(groups.income);
+    const fixedExpenses = sumValues(groups['fixed-expense']);
+    const variableExpenses = sumValues(groups['variable-expense']);
+    const savings = sumValues(groups.saving);
     return {
       income,
       fixedExpenses,
@@ -72,7 +73,7 @@ export class App {
     this.report.build({
       month: this.currentMonth(),
       summary: this.summary(),
-      fixedEntries: this.entriesByKind('fixed-expense'),
+      fixedEntries: this.entriesByKind()['fixed-expense'],
       allEntries: this.entries(),
     }),
   );
@@ -193,10 +194,6 @@ export class App {
 
   printReport(): void {
     window.print();
-  }
-
-  entriesByKind(kind: TransactionKind): WalletEntry[] {
-    return this.selectedMonthEntries().filter((entry) => entry.kind === kind);
   }
 
   openBackupHelp(): void {

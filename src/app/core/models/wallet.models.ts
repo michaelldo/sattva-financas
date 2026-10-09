@@ -43,3 +43,7 @@ export interface WalletSummary {
   savings: number;
   balance: number;
 }
+
+export type EntryOfKind<K extends TransactionKind> = Extract<WalletEntry, { kind: K }>;
+
+export type EntriesByKind = { [K in TransactionKind]: EntryOfKind<K>[] };

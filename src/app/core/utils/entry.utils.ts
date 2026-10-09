@@ -1,6 +1,11 @@
 import { createId } from '../../id-generator';
 import { MonthKey } from './month.utils';
-import { InstallmentInfo, TransactionKind, WalletEntry } from '../models/wallet.models';
+import {
+  EntriesByKind,
+  InstallmentInfo,
+  TransactionKind,
+  WalletEntry,
+} from '../models/wallet.models';
 
 export interface NewEntryData {
   kind: TransactionKind;
@@ -42,6 +47,27 @@ export function isEntryPaidInMonth(entry: WalletEntry, month: MonthKey): boolean
     default:
       return false;
   }
+}
+
+export function groupByKind(entries: readonly WalletEntry[]): EntriesByKind {
+  const groups: EntriesByKind = {
+    income: [],
+    'fixed-expense': [],
+    'variable-expense': [],
+    saving: [],
+  };
+
+  for (const entry of entries) {
+    // O TypeScript não consegue relacionar `entry.kind` com a lista certa sozinho,
+    // então afirmamos que a lista aceita WalletEntry. É seguro: a chave é o próprio kind.
+    (groups[entry.kind] as WalletEntry[]).push(entry);
+  }
+
+  return groups;
+}
+
+export function sumValues(entries: readonly WalletEntry[]): number {
+  return entries.reduce((sum, entry) => sum + entry.value, 0);
 }
 
 export function assertNever(valeu: never): never {

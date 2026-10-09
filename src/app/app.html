@@ -43,7 +43,7 @@
     <app-entry-card
       heading="Gastos Variáveis"
       itemLabel="gasto variável"
-      [entries]="entriesByKind('variable-expense')"
+      [entries]="entriesByKind()['variable-expense']"
       [month]="currentMonth()"
       [showPaidStatus]="true"
       (remove)="removeEntry($event)"
@@ -76,7 +76,7 @@
     <app-entry-card
       heading="Gastos Fixos"
       itemLabel="gasto fixo"
-      [entries]="entriesByKind('fixed-expense')"
+      [entries]="entriesByKind()['fixed-expense']"
       [month]="currentMonth()"
       [showPaidStatus]="true"
       (remove)="removeEntry($event)"
@@ -98,7 +98,7 @@
     <app-entry-card
       heading="Renda Mensal"
       itemLabel="renda"
-      [entries]="entriesByKind('income')"
+      [entries]="entriesByKind().income"
       [month]="currentMonth()"
       (remove)="removeEntry($event)"
     >
@@ -146,7 +146,7 @@
       heading="Cofrinho"
       itemLabel="cofrinho"
       variant="dark"
-      [entries]="entriesByKind('saving')"
+      [entries]="entriesByKind().saving"
       [month]="currentMonth()"
       (remove)="removeEntry($event)"
     >
