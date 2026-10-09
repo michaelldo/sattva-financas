@@ -3,7 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { addMonths, formatMonthLabel, getCurrentMonth } from './core/utils/month.utils';
+import { addMonths, getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import { splitIntoInstallments } from './core/utils/installments';
@@ -13,15 +13,11 @@ import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
 import { createId } from './id-generator';
 import { EntryCard } from './features/entry-card/entry-card';
-
-interface MonthOption {
-  label: string;
-  value: string;
-}
+import { MonthPicker } from './features/month-picker/month-picker';
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask, EntryCard],
+  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask, EntryCard, MonthPicker],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -32,9 +28,8 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
 
-  readonly appVersion = '2.2.5';
+  readonly appVersion = '2.3.0';
   readonly currentMonth = signal(getCurrentMonth());
-  readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
   readonly reportOpen = signal(false);
@@ -72,19 +67,6 @@ export class App {
       balance: income - fixedExpenses - variableExpenses - savings,
     };
   });
-
-  readonly selectedMonthLabel = computed(() => formatMonthLabel(this.currentMonth()));
-
-  readonly monthOptions = computed<MonthOption[]>(() =>
-    Array.from({ length: 12 }, (_, index) => {
-      const value = `${this.viewedYear()}-${String(index + 1).padStart(2, '0')}`;
-
-      return {
-        label: this.formatMonthName(index),
-        value,
-      };
-    }),
-  );
 
   readonly reportText = computed(() =>
     this.report.build({
@@ -213,20 +195,6 @@ export class App {
     window.print();
   }
 
-  updateCurrentMonth(value: string): void {
-    this.currentMonth.set(value);
-    this.viewedYear.set(Number(value.slice(0, 4)));
-    this.monthPickerOpen.set(false);
-  }
-
-  toggleMonthPicker(): void {
-    this.monthPickerOpen.update((isOpen) => !isOpen);
-  }
-
-  changeYear(offset: number): void {
-    this.viewedYear.update((year) => year + offset);
-  }
-
   entriesByKind(kind: TransactionKind): WalletEntry[] {
     return this.selectedMonthEntries().filter((entry) => entry.kind === kind);
   }
@@ -282,10 +250,5 @@ export class App {
       entry.month <= this.currentMonth() &&
       (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
     );
-  }
-
-  private formatMonthName(monthIndex: number): string {
-    const date = new Date(this.viewedYear(), monthIndex, 1);
-    return new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
   }
 }

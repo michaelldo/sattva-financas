@@ -34,36 +34,9 @@
     </div>
   </section>
 
-  <section class="month-filter" aria-label="Filtro">
+  <section class="month-filter" aria-label="Filtro de mês">
     <span>Mês de referência</span>
-    <div class="month-picker">
-      <button class="month-trigger" type="button" (click)="toggleMonthPicker()">
-        {{ selectedMonthLabel() }}
-        <span>⌄</span>
-      </button>
-
-      @if (monthPickerOpen()) {
-        <div class="month-panel">
-          <div class="month-panel__header">
-            <button type="button" (click)="changeYear(-1)" aria-label="Ano anterior">&lt;</button>
-            <strong>{{ viewedYear() }}</strong>
-            <button type="button" (click)="changeYear(1)" aria-label="Proximo ano">&gt;</button>
-          </div>
-
-          <div class="month-grid">
-            @for (month of monthOptions(); track month.value) {
-              <button
-                type="button"
-                [class.is-selected]="month.value === currentMonth()"
-                (click)="updateCurrentMonth(month.value)"
-              >
-                {{ month.label }}
-              </button>
-            }
-          </div>
-        </div>
-      }
-    </div>
+    <app-month-picker [(month)]="currentMonth" />
   </section>
 
   <section class="entry-grid" aria-label="Lançamento">

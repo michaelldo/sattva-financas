@@ -67,22 +67,22 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.updateCurrentMonth('2026-06');
+    app.currentMonth.set('2026-06');
     app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
     app.addFixedExpense();
 
     expect(app.entriesByKind('fixed-expense').length).toBe(1);
 
-    app.updateCurrentMonth('2026-07');
+    app.currentMonth.set('2026-07');
     app.removeEntry(app.entriesByKind('fixed-expense')[0].id);
 
     expect(app.entriesByKind('fixed-expense').length).toBe(0);
 
-    app.updateCurrentMonth('2026-06');
+    app.currentMonth.set('2026-06');
 
     expect(app.entriesByKind('fixed-expense').length).toBe(1);
 
-    app.updateCurrentMonth('2026-08');
+    app.currentMonth.set('2026-08');
 
     expect(app.entriesByKind('fixed-expense').length).toBe(0);
   });
@@ -91,13 +91,13 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.updateCurrentMonth('2026-07');
+    app.currentMonth.set('2026-07');
     app.fixedExpenseForm.setValue({ description: 'Aluguel ajustado', value: 1100 });
     app.addFixedExpense();
 
     expect(app.entriesByKind('fixed-expense').length).toBe(1);
 
-    app.updateCurrentMonth('2026-06');
+    app.currentMonth.set('2026-06');
 
     expect(app.entriesByKind('fixed-expense').length).toBe(0);
   });
@@ -122,7 +122,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.updateCurrentMonth('2026-06');
+    app.currentMonth.set('2026-06');
     app.fixedExpenseForm.setValue({ description: 'Internet', value: 120 });
     app.addFixedExpense();
 
@@ -132,11 +132,11 @@ describe('App', () => {
 
     expect(app.isEntryPaid(app.entriesByKind('fixed-expense')[0])).toBe(true);
 
-    app.updateCurrentMonth('2026-07');
+    app.currentMonth.set('2026-07');
 
     expect(app.isEntryPaid(app.entriesByKind('fixed-expense')[0])).toBe(false);
 
-    app.updateCurrentMonth('2026-06');
+    app.currentMonth.set('2026-06');
 
     expect(app.isEntryPaid(app.entriesByKind('fixed-expense')[0])).toBe(true);
   });

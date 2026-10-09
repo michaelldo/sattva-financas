@@ -1,6 +1,6 @@
 {
   "name": "sattva-financas",
-  "version": "0.0.0",
+  "version": "2.3.0",
   "private": true,
   "packageManager": "npm@11.3.0",
   "scripts": {
