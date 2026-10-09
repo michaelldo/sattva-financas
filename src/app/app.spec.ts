@@ -167,4 +167,29 @@ describe('App', () => {
     expect(app.entriesByKind('saving').length).toBe(1);
     expect(app.entriesByKind('saving')[0].value).toBe(550);
   });
+
+
+  it('cria as parcelas quando o usuário preenche o formulário de gasto variável', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const card: HTMLElement = fixture.nativeElement.querySelector('app-entry-card');
+
+    function type(selector: string, text: string): void {
+      const input = card.querySelector<HTMLInputElement>(selector)!;
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+    }
+
+    type('input[formControlName="description"]', 'Notebook');
+    type('input[formControlName="value"]', '300000');
+    card.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+    await fixture.whenStable();
+
+    type('input[formControlName="installments"]', '3');
+    card.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await fixture.whenStable();
+
+    const entries = fixture.componentInstance.entries();
+    expect(entries.map((entry) => entry.value)).toEqual([1000, 1000, 1000]);
+  });
 });

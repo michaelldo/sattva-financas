@@ -32,7 +32,7 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
 
-  readonly appVersion = '2.2.0';
+  readonly appVersion = '2.2.5';
   readonly currentMonth = signal(getCurrentMonth());
   readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));

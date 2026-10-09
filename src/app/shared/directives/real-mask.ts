@@ -1,42 +1,60 @@
-import { Directive, HostListener, Self } from '@angular/core';
-import { NgControl } from '@angular/forms';
+import { Directive, ElementRef, forwardRef, inject } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+
+const realFormatter = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function formatReal(value: number | null): string {
+  return value === null ? '' : realFormatter.format(value);
+}
+
+export function parseReal(text: string): number | null {
+  const digits = text.replace(/\D/g, '');
+  return digits ? Number(digits) / 100 : null;
+}
 
 @Directive({
-  selector: '[appRealMask]',
-  standalone: true,
+  selector: 'input[appRealMask]',
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => RealMask),
+      multi: true,
+    },
+  ],
+  host: {
+    inputmode: 'numeric',
+    '(input)': 'handleInput()',
+    '(blur)': 'onTouched()',
+  },
 })
-export class RealMask {
-  // Injeta o controle do formulário associado ao input (formControlName)
-  constructor(@Self() private ngControl: NgControl) {}
+export class RealMask implements ControlValueAccessor {
+  private readonly input = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
 
-  @HostListener('input', ['$event'])
-  onInput(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (!input) return;
+  private onChange: (value: number | null) => void = () => {};
+  protected onTouched: () => void = () => {};
 
-    let value = input.value;
+  writeValue(value: number | null): void {
+    this.input.value = formatReal(value);
+  }
 
-    value = value.replace(/\D/g, '');
+  registerOnChange(fn: (value: number | null) => void): void {
+    this.onChange = fn;
+  }
 
-    if (!value) {
-      this.ngControl.control?.setValue(null, { emitEvent: false });
-      input.value = '';
-      return;
-    }
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
+  }
 
-    const numberValue = Number(value) / 100;
+  setDisabledState(isDisabled: boolean): void {
+    this.input.disabled = isDisabled;
+  }
 
-    this.ngControl.control?.setValue(numberValue, { emitEvent: false });
-    this.ngControl.control?.markAsDirty();
-    this.ngControl.control?.markAsTouched();
-
-    const fomatted = new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(numberValue);
-
-    setTimeout(() => {
-      input.value = fomatted;
-    });
+  protected handleInput(): void {
+    const value = parseReal(this.input.value);
+    this.input.value = formatReal(value);
+    this.onChange(value);
   }
 }
