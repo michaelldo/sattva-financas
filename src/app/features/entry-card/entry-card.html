@@ -9,7 +9,7 @@
   [attr.aria-expanded]="listOpen()"
   [attr.aria-label]="'Mostrar lista de ' + heading()">
   <span>{{ countLabel() }}</span>
-  <span>{{ listOpen() ? '✕' : '☰' }}</span>
+  <span>{{ listOpen() ? '×' : '☰' }}</span>
 </button>
 
 @if (listOpen()) {

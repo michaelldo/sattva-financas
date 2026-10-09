@@ -1,0 +1,16 @@
+<dialog
+  #dialog
+  [class.wide]="wide()"
+  [attr.aria-labelledby]="titleId"
+  (close)="close()"
+  (click)="closeOnBackdropClick($event)"
+>
+  <div class="surface">
+    <header>
+      <h2 [id]="titleId">{{ heading() }}</h2>
+      <button type="button" (click)="close()" aria-label="Fechar">×</button>
+    </header>
+
+    <ng-content />
+  </div>
+</dialog>

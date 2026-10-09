@@ -290,57 +290,6 @@ dd {
   color: #f4f4f4;
 }
 
-.modal-backdrop {
-  position: fixed;
-  z-index: 10;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  background: rgb(18 27 33 / 72%);
-}
-
-.modal-card {
-  width: min(560px, 100%);
-  max-height: min(720px, calc(100vh - 36px));
-  overflow: auto;
-  border: 1px solid rgb(132 219 171 / 32%);
-  border-radius: 22px;
-  background: #f4f4f4;
-  color: #29484e;
-  box-shadow: 0 18px 40px rgb(0 0 0 / 40%);
-}
-
-.modal-card--wide {
-  width: min(780px, 100%);
-}
-
-.modal-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 18px 22px;
-  background: #141d23;
-  color: #f4f4f4;
-}
-
-.modal-card h2 {
-  margin: 0;
-  font-size: 1.35rem;
-}
-
-.modal-card header button {
-  width: 34px;
-  height: 34px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: #84dbab;
-  font-size: 1.4rem;
-  cursor: pointer;
-}
-
 .modal-content {
   display: grid;
   gap: 14px;
@@ -485,8 +434,7 @@ dd {
   .month-filter,
   .entry-grid,
   .lower-grid,
-  .app-footer,
-  .modal-backdrop {
+  .app-footer{
     display: none !important;
   }
 

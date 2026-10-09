@@ -14,10 +14,20 @@ import { RealMask } from './shared/directives/real-mask';
 import { createId } from './id-generator';
 import { EntryCard } from './features/entry-card/entry-card';
 import { MonthPicker } from './features/month-picker/month-picker';
+import { Modal } from './shared/components/modal/modal';
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask, EntryCard, MonthPicker],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    NgClass,
+    ReactiveFormsModule,
+    RealMask,
+    EntryCard,
+    MonthPicker,
+    Modal,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -196,19 +206,6 @@ export class App {
     window.print();
   }
 
-  openBackupHelp(): void {
-    this.backupHelpOpen.set(true);
-  }
-
-  openReport(): void {
-    this.reportOpen.set(true);
-  }
-
-  closeModals(): void {
-    this.backupHelpOpen.set(false);
-    this.reportOpen.set(false);
-  }
-
   private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
     if (form.invalid) {
       form.markAllAsTouched();
@@ -248,4 +245,6 @@ export class App {
       (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
     );
   }
+
+  protected readonly print = print;
 }
