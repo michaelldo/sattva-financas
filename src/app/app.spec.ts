@@ -50,13 +50,17 @@ describe('App', () => {
     });
     app.addVariableExpense();
 
-    const secondInstallment = app.entries().find((entry) => entry.installment?.current === 2);
+    const secondInstallment = app
+      .entries()
+      .find((entry) => entry.kind === 'variable-expense' && entry.installment?.current === 2);
 
     expect(secondInstallment).toBeTruthy();
 
     app.removeEntry(secondInstallment!.id);
 
-    expect(app.entries().map((entry) => entry.installment?.current)).toEqual([1]);
+    expect(
+      app.entries().map((entry) => entry.kind === 'variable-expense' && entry.installment?.current),
+    ).toEqual([1]);
   });
 
   it('should hide fixed expenses from the selected month forward when removed', () => {
@@ -144,7 +148,7 @@ describe('App', () => {
     app.savingForm.setValue({ description: 'Reserva', value: 300 });
     app.addSaving();
 
-    expect(app.entriesByKind('saving')[0].paid).toBeUndefined();
+    expect('paid' in app.entriesByKind('saving')[0]).toBe(false);
   });
 
   it('should add to existing saving when same name is provided', () => {
@@ -162,5 +166,30 @@ describe('App', () => {
 
     expect(app.entriesByKind('saving').length).toBe(1);
     expect(app.entriesByKind('saving')[0].value).toBe(550);
+  });
+
+
+  it('cria as parcelas quando o usuário preenche o formulário de gasto variável', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const card: HTMLElement = fixture.nativeElement.querySelector('app-entry-card');
+
+    function type(selector: string, text: string): void {
+      const input = card.querySelector<HTMLInputElement>(selector)!;
+      input.value = text;
+      input.dispatchEvent(new Event('input'));
+    }
+
+    type('input[formControlName="description"]', 'Notebook');
+    type('input[formControlName="value"]', '300000');
+    card.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click();
+    await fixture.whenStable();
+
+    type('input[formControlName="installments"]', '3');
+    card.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await fixture.whenStable();
+
+    const entries = fixture.componentInstance.entries();
+    expect(entries.map((entry) => entry.value)).toEqual([1000, 1000, 1000]);
   });
 });

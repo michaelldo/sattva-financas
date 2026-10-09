@@ -66,12 +66,18 @@
     </div>
   </section>
 
-  <section class="entry-grid" aria-label="Lancamentos">
-    <article class="entry-card">
-      <h2>Gastos Variaveis</h2>
+  <section class="entry-grid" aria-label="Lançamento">
+    <app-entry-card
+      heading="Gastos Variáveis"
+      itemLabel="gasto variável"
+      [entries]="entriesByKind('variable-expense')"
+      [month]="currentMonth()"
+      [showPaidStatus]="true"
+      (remove)="removeEntry($event)"
+      (togglePaid)="togglePaidStatus($event)"
+    >
       <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
-        <label>
-          Descrição:
+        <label>Descrição:
           <input type="text" formControlName="description" placeholder="Mercado" />
         </label>
         <label>
@@ -86,45 +92,23 @@
         }
         <div class="form-actions">
           <label class="check-row">
-            parcelado?
+            Parcelado?
             <input type="checkbox" formControlName="isInstallment" />
           </label>
           <button type="submit">Adicionar</button>
         </div>
       </form>
+    </app-entry-card>
 
-      <button class="list-toggle" type="button" (click)="toggleList('variable')" aria-label="Mostrar gastos variaveis">
-        <span>
-          {{ entriesByKind('variable-expense').length }}
-          {{ entriesByKind('variable-expense').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
-        </span>
-        <span>{{ visibleLists().variable ? 'X' : '☰' }}</span>
-      </button>
-
-      @if (visibleLists().variable) {
-        <ul class="entry-list">
-          @for (entry of entriesByKind('variable-expense'); track entry.id) {
-            <li class="has-status">
-              <span>{{ entry.description }}</span>
-              <button
-                class="status-badge"
-                type="button"
-                [class.is-paid]="isEntryPaid(entry)"
-                (click)="togglePaidStatus(entry)"
-                [attr.aria-label]="isEntryPaid(entry) ? 'Marcar gasto variavel como nao pago' : 'Marcar gasto variavel como pago'"
-              >
-                {{ isEntryPaid(entry) ? 'Pago' : 'Não pago' }}
-              </button>
-              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
-              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto variavel">×</button>
-            </li>
-          }
-        </ul>
-      }
-    </article>
-
-    <article class="entry-card">
-      <h2>Gastos Fixos</h2>
+    <app-entry-card
+      heading="Gastos Fixos"
+      itemLabel="gasto fixo"
+      [entries]="entriesByKind('fixed-expense')"
+      [month]="currentMonth()"
+      [showPaidStatus]="true"
+      (remove)="removeEntry($event)"
+      (togglePaid)="togglePaidStatus($event)"
+    >
       <form [formGroup]="fixedExpenseForm" (ngSubmit)="addFixedExpense()">
         <label>
           Descrição:
@@ -136,39 +120,15 @@
         </label>
         <button type="submit">Adicionar</button>
       </form>
+    </app-entry-card>
 
-      <button class="list-toggle" type="button" (click)="toggleList('fixed')" aria-label="Mostrar gastos fixos">
-        <span>
-          {{ entriesByKind('fixed-expense').length }}
-          {{ entriesByKind('fixed-expense').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
-        </span>
-        <span>{{ visibleLists().fixed ? 'X' : '☰' }}</span>
-      </button>
-
-      @if (visibleLists().fixed) {
-        <ul class="entry-list">
-          @for (entry of entriesByKind('fixed-expense'); track entry.id) {
-            <li class="has-status">
-              <span>{{ entry.description }}</span>
-              <button
-                class="status-badge"
-                type="button"
-                [class.is-paid]="isEntryPaid(entry)"
-                (click)="togglePaidStatus(entry)"
-                [attr.aria-label]="isEntryPaid(entry) ? 'Marcar gasto fixo como nao pago' : 'Marcar gasto fixo como pago'"
-              >
-                {{ isEntryPaid(entry) ? 'Pago' : 'Não pago' }}
-              </button>
-              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
-              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover gasto fixo">×</button>
-            </li>
-          }
-        </ul>
-      }
-    </article>
-
-    <article class="entry-card">
-      <h2>Renda mensal</h2>
+    <app-entry-card
+      heading="Renda Mensal"
+      itemLabel="renda"
+      [entries]="entriesByKind('income')"
+      [month]="currentMonth()"
+      (remove)="removeEntry($event)"
+    >
       <form [formGroup]="incomeForm" (ngSubmit)="addIncome()">
         <label>
           Descrição:
@@ -176,31 +136,11 @@
         </label>
         <label>
           R$:
-          <input type="text" formControlName="value" placeholder="0.00" appRealMask />
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask>
         </label>
         <button type="submit">Adicionar</button>
       </form>
-
-      <button class="list-toggle" type="button" (click)="toggleList('income')" aria-label="Mostrar rendas">
-        <span>
-          {{ entriesByKind('income').length }}
-          {{ entriesByKind('income').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
-        </span>
-        <span>{{ visibleLists().income ? 'X' : '☰' }}</span>
-      </button>
-
-      @if (visibleLists().income) {
-        <ul class="entry-list">
-          @for (entry of entriesByKind('income'); track entry.id) {
-            <li>
-              <span>{{ entry.description }}</span>
-              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
-              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover renda">×</button>
-            </li>
-          }
-        </ul>
-      }
-    </article>
+    </app-entry-card>
   </section>
 
   <section class="lower-grid" aria-label="Resumo e cofrinho">
@@ -229,11 +169,17 @@
       </dl>
     </article>
 
-    <article class="saving-card">
-      <h2>Cofrinho</h2>
+    <app-entry-card
+      heading="Cofrinho"
+      itemLabel="cofrinho"
+      variant="dark"
+      [entries]="entriesByKind('saving')"
+      [month]="currentMonth()"
+      (remove)="removeEntry($event)"
+    >
       <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
         <label>
-          Descrição
+          Descrição:
           <input type="text" formControlName="description" placeholder="Viagem" />
         </label>
         <label>
@@ -242,27 +188,7 @@
         </label>
         <button type="submit">Adicionar</button>
       </form>
-
-      <button class="list-toggle" type="button" (click)="toggleList('saving')" aria-label="Mostrar cofrinho">
-        <span>
-          {{ entriesByKind('saving').length }}
-          {{ entriesByKind('saving').length <= 1 ? 'Lançamento' : 'Lançamentos' }}
-        </span>
-        <span>{{ visibleLists().saving ? 'X' : '☰' }}</span>
-      </button>
-
-      @if (visibleLists().saving) {
-        <ul class="entry-list">
-          @for (entry of entriesByKind('saving'); track entry.id) {
-            <li>
-              <span>{{ entry.description }}</span>
-              <strong>{{ entry.value | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
-              <button type="button" (click)="removeEntry(entry.id)" aria-label="Remover cofrinho">×</button>
-            </li>
-          }
-        </ul>
-      }
-    </article>
+    </app-entry-card>
   </section>
 
   <footer class="app-footer">
