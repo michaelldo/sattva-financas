@@ -3,10 +3,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { addMonths, getCurrentMonth } from './core/utils/month.utils';
+import { getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
-import { splitIntoInstallments } from './core/utils/installments';
+import { buildInstallments, stripInstallmentSuffix } from './core/utils/installments';
 import { groupByKind, isEntryPaidInMonth, sumValues } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
@@ -15,6 +15,7 @@ import { createId } from './id-generator';
 import { EntryCard } from './features/entry-card/entry-card';
 import { MonthPicker } from './features/month-picker/month-picker';
 import { Modal } from './shared/components/modal/modal';
+import { version } from '../../package.json';
 
 @Component({
   selector: 'app-root',
@@ -38,11 +39,21 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
 
-  readonly appVersion = '2.3.1';
+  readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
   readonly reportOpen = signal(false);
+  readonly editingEntry = signal<WalletEntry | null>(null);
+  readonly editForm = this.formBuilder.group({
+    description: ['', Validators.required],
+    value: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    installments: [1, [Validators.required, Validators.min(1)]],
+  });
+  readonly editingInstallment = computed(() => {
+    const entry = this.editingEntry();
+    return entry?.kind === 'variable-expense' && entry.installment ? entry.installment : null;
+  });
   readonly importMessage = signal('');
   readonly entries = this.walletStorage.entries;
 
@@ -132,24 +143,17 @@ export class App {
 
     const { description, value, isInstallment, installments } =
       this.variableExpenseForm.getRawValue();
-    const totalInstallments = isInstallment ? installments || 1 : 1;
-    const groupId = createId();
-    const installmentValues = splitIntoInstallments(value ?? 0, totalInstallments);
-    const entries = Array.from({ length: totalInstallments }, (_, index) => ({
-      kind: 'variable-expense' as const,
-      description:
-        totalInstallments > 1
-          ? `${description} Parc.:${index + 1}/${totalInstallments}`
-          : (description ?? ''),
-      value: installmentValues[index],
-      month: addMonths(this.currentMonth(), index),
-      installment:
-        totalInstallments > 1
-          ? { groupId, current: index + 1, total: totalInstallments }
-          : undefined,
-    }));
+
+    const entries = buildInstallments({
+      description: description ?? '',
+      total: value ?? 0,
+      count: isInstallment ? installments || 1 : 1,
+      startMonth: this.currentMonth(),
+      groupId: createId(),
+    });
 
     this.walletStorage.addMany(entries);
+
     this.variableExpenseForm.reset({
       description: '',
       value: null,
@@ -160,6 +164,59 @@ export class App {
 
   removeEntry(id: string): void {
     this.walletStorage.remove(id, this.currentMonth());
+  }
+
+  startEdit(entry: WalletEntry): void {
+    this.editingEntry.set(entry);
+
+    if (entry.kind === 'variable-expense' && entry.installment) {
+      const groupId = entry.installment.groupId;
+      const group = this.entries().filter(
+        (item) => item.kind === 'variable-expense' && item.installment?.groupId === groupId,
+      );
+
+      this.editForm.reset({
+        description: stripInstallmentSuffix(entry.description),
+        value: sumValues(group),
+        installments: entry.installment.total,
+      });
+      return;
+    }
+    this.editForm.reset({ description: entry.description, value: entry.value, installments: 1 });
+  }
+
+  saveEdit(): void {
+    const entry = this.editingEntry();
+
+    if (!entry || this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.editForm.getRawValue();
+    const description = (raw.description ?? '').trim();
+    const value = Number(raw.value);
+
+    if (entry.kind === 'variable-expense' && entry.installment) {
+      this.walletStorage.editInstallmentGroup(entry.installment.groupId, {
+        description,
+        total: value,
+        installments: Number(raw.installments),
+      });
+    } else if (entry.kind === 'fixed-expense') {
+      this.walletStorage.editFixedFromMonth(entry.id, this.currentMonth(), { description, value });
+    } else {
+      this.walletStorage.update(entry.id, { description, value });
+    }
+
+    this.editingEntry.set(null);
+  }
+
+  /** Chamado quando o modal muda de estado: ao fechar, cancela a edição */
+  onEditModalChange(open: boolean): void {
+    if (!open) {
+      this.editingEntry.set(null);
+    }
   }
 
   togglePaidStatus(entry: WalletEntry): void {
@@ -245,6 +302,4 @@ export class App {
       (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
     );
   }
-
-  protected readonly print = print;
 }

@@ -2,18 +2,6 @@ import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Modal } from './modal';
 
-// O jsdom (o "navegador falso" dos testes) não implementa showModal()/close().
-// Simulamos o essencial: o atributo `open` e o evento `close`.
-beforeAll(() => {
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.open = true;
-  };
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.open = false;
-    this.dispatchEvent(new Event('close'));
-  };
-});
-
 @Component({
   imports: [Modal],
   template: `

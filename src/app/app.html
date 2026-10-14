@@ -46,6 +46,7 @@
       [entries]="entriesByKind()['variable-expense']"
       [month]="currentMonth()"
       [showPaidStatus]="true"
+      (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
       (togglePaid)="togglePaidStatus($event)"
     >
@@ -79,6 +80,7 @@
       [entries]="entriesByKind()['fixed-expense']"
       [month]="currentMonth()"
       [showPaidStatus]="true"
+      (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
       (togglePaid)="togglePaidStatus($event)"
     >
@@ -100,6 +102,7 @@
       itemLabel="renda"
       [entries]="entriesByKind().income"
       [month]="currentMonth()"
+      (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
     >
       <form [formGroup]="incomeForm" (ngSubmit)="addIncome()">
@@ -148,6 +151,7 @@
       variant="dark"
       [entries]="entriesByKind().saving"
       [month]="currentMonth()"
+      (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
     >
       <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
@@ -199,6 +203,44 @@
       <button type="button" (click)="printReport()">Imprimir</button>
     </div>
     <textarea class="report-text" readonly [value]="reportText()"></textarea>
+  </app-modal>
+
+  <app-modal
+    heading="Editar lançamento"
+    [open]="editingEntry() !== null"
+    (openChange)="onEditModalChange($event)"
+  >
+    <form class="modal-content edit-form" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+      <label>
+        Descrição
+        <input type="text" formControlName="description" />
+      </label>
+      <label>
+        {{ editingInstallment() ? 'Valor total' : 'R$' }}
+        <input type="text" formControlName="value" appRealMask />
+      </label>
+
+      @if (editingInstallment()) {
+        <label>
+          Parcelas
+          <input type="number" min="1" step="1" formControlName="installments" />
+        </label>
+        <p class="edit-hint">As parcelas serão recalculadas a partir do valor total.</p>
+      }
+
+      @if (editingEntry()?.kind === 'fixed-expense') {
+        <p class="edit-hint">
+          A alteração vale a partir de
+          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' : undefined : 'pt-BR' }}</strong>.
+          Os meses Anteriores continuarão com os dados antigos.
+        </p>
+      }
+
+      <div class="edit-actions">
+        <button type="button" class="secondary" (click)="editingEntry.set(null)">Cancelar</button>
+        <button type="submit">Salvar</button>
+      </div>
+    </form>
   </app-modal>
 
   <pre class="print-report">{{ reportText() }}</pre>

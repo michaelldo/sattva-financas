@@ -14,7 +14,7 @@ export interface SavingEntry extends BaseEntry {
   kind: 'saving';
 }
 
-export interface FixedExpenseentry extends BaseEntry {
+export interface FixedExpenseEntry extends BaseEntry {
   kind: 'fixed-expense';
   paidMonths: Record<string, boolean>;
   deletedFromMonth?: string;
@@ -32,7 +32,7 @@ export interface VariableExpenseEntry extends BaseEntry {
   installment?: InstallmentInfo;
 }
 
-export type WalletEntry = IncomeEntry | SavingEntry | FixedExpenseentry | VariableExpenseEntry;
+export type WalletEntry = IncomeEntry | SavingEntry | FixedExpenseEntry | VariableExpenseEntry;
 
 export type TransactionKind = WalletEntry['kind'];
 

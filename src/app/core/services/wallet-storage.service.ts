@@ -4,6 +4,12 @@ import { getCurrentMonth } from '../utils/month.utils';
 import { createId } from '../../id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
 import { parseWalletEntry } from '../utils/entry-parser';
+import {
+  EntryChanges,
+  editFixedFromMonth,
+  editInstallmentGroup,
+  InstallmentChanges,
+} from '../utils/entry-edit';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
 
@@ -40,6 +46,14 @@ export class WalletStorageService {
 
   update(id: string, changes: Partial<Pick<WalletEntry, 'description' | 'value'>>): void {
     this.save(this.entriesSignal().map((e) => (e.id === id ? { ...e, ...changes } : e)));
+  }
+
+  editFixedFromMonth(id: string, month: string, changes: EntryChanges): void {
+    this.save(editFixedFromMonth(this.entriesSignal(), id, month, changes));
+  }
+
+  editInstallmentGroup(groupId: string, changes: InstallmentChanges): void {
+    this.save(editInstallmentGroup(this.entriesSignal(), groupId, changes));
   }
 
   private normalizeDescription(description: string): string {
