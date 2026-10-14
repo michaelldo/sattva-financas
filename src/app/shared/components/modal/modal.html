@@ -1,6 +1,7 @@
 <dialog
   #dialog
   [class.wide]="wide()"
+  [class.drawer]="variant() === 'drawer'"
   [attr.aria-labelledby]="titleId"
   (close)="close()"
   (click)="closeOnBackdropClick($event)"

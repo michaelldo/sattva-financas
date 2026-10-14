@@ -15,6 +15,39 @@ dialog.wide {
   width: min(780px, calc(100% - 36px));
 }
 
+dialog.drawer {
+  width: min(320px, 85vw);
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border-width: 0 1px 0 0;
+  border-radius: 0 22px 22px 0;
+  background: #141d23;
+  color: #f4f4f4;
+}
+
+dialog.drawer[open] {
+  animation: slide-in 0,2s ease-out;
+}
+
+dialog.drawer .surface {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.drawer[open] {
+    animation: none;
+  }
+}
+
 dialog::backdrop {
   background: rgb(18 27 33 / 72%);
 }
