@@ -3,25 +3,32 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { addMonths, formatMonthLabel, getCurrentMonth } from './core/utils/month.utils';
+import { getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
-import { splitIntoInstallments } from './core/utils/installments';
-import { isEntryPaidInMonth } from './core/utils/entry.utils';
+import { buildInstallments, stripInstallmentSuffix } from './core/utils/installments';
+import { groupByKind, isEntryPaidInMonth, sumValues } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
 import { createId } from './id-generator';
 import { EntryCard } from './features/entry-card/entry-card';
-
-interface MonthOption {
-  label: string;
-  value: string;
-}
+import { MonthPicker } from './features/month-picker/month-picker';
+import { Modal } from './shared/components/modal/modal';
+import { version } from '../../package.json';
 
 @Component({
   selector: 'app-root',
-  imports: [CurrencyPipe, DatePipe, NgClass, ReactiveFormsModule, RealMask, EntryCard],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    NgClass,
+    ReactiveFormsModule,
+    RealMask,
+    EntryCard,
+    MonthPicker,
+    Modal,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -32,12 +39,21 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
 
-  readonly appVersion = '2.2.5';
+  readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
-  readonly monthPickerOpen = signal(false);
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
   readonly reportOpen = signal(false);
+  readonly editingEntry = signal<WalletEntry | null>(null);
+  readonly editForm = this.formBuilder.group({
+    description: ['', Validators.required],
+    value: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    installments: [1, [Validators.required, Validators.min(1)]],
+  });
+  readonly editingInstallment = computed(() => {
+    const entry = this.editingEntry();
+    return entry?.kind === 'variable-expense' && entry.installment ? entry.installment : null;
+  });
   readonly importMessage = signal('');
   readonly entries = this.walletStorage.entries;
 
@@ -57,13 +73,14 @@ export class App {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
 
-  readonly summary = computed<WalletSummary>(() => {
-    const monthEntries = this.selectedMonthEntries();
-    const income = this.sumByKind(monthEntries, 'income');
-    const fixedExpenses = this.sumByKind(monthEntries, 'fixed-expense');
-    const variableExpenses = this.sumByKind(monthEntries, 'variable-expense');
-    const savings = this.sumByKind(monthEntries, 'saving');
+  readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
 
+  readonly summary = computed<WalletSummary>(() => {
+    const groups = this.entriesByKind();
+    const income = sumValues(groups.income);
+    const fixedExpenses = sumValues(groups['fixed-expense']);
+    const variableExpenses = sumValues(groups['variable-expense']);
+    const savings = sumValues(groups.saving);
     return {
       income,
       fixedExpenses,
@@ -73,24 +90,11 @@ export class App {
     };
   });
 
-  readonly selectedMonthLabel = computed(() => formatMonthLabel(this.currentMonth()));
-
-  readonly monthOptions = computed<MonthOption[]>(() =>
-    Array.from({ length: 12 }, (_, index) => {
-      const value = `${this.viewedYear()}-${String(index + 1).padStart(2, '0')}`;
-
-      return {
-        label: this.formatMonthName(index),
-        value,
-      };
-    }),
-  );
-
   readonly reportText = computed(() =>
     this.report.build({
       month: this.currentMonth(),
       summary: this.summary(),
-      fixedEntries: this.entriesByKind('fixed-expense'),
+      fixedEntries: this.entriesByKind()['fixed-expense'],
       allEntries: this.entries(),
     }),
   );
@@ -139,24 +143,17 @@ export class App {
 
     const { description, value, isInstallment, installments } =
       this.variableExpenseForm.getRawValue();
-    const totalInstallments = isInstallment ? installments || 1 : 1;
-    const groupId = createId();
-    const installmentValues = splitIntoInstallments(value ?? 0, totalInstallments);
-    const entries = Array.from({ length: totalInstallments }, (_, index) => ({
-      kind: 'variable-expense' as const,
-      description:
-        totalInstallments > 1
-          ? `${description} Parc.:${index + 1}/${totalInstallments}`
-          : (description ?? ''),
-      value: installmentValues[index],
-      month: addMonths(this.currentMonth(), index),
-      installment:
-        totalInstallments > 1
-          ? { groupId, current: index + 1, total: totalInstallments }
-          : undefined,
-    }));
+
+    const entries = buildInstallments({
+      description: description ?? '',
+      total: value ?? 0,
+      count: isInstallment ? installments || 1 : 1,
+      startMonth: this.currentMonth(),
+      groupId: createId(),
+    });
 
     this.walletStorage.addMany(entries);
+
     this.variableExpenseForm.reset({
       description: '',
       value: null,
@@ -167,6 +164,59 @@ export class App {
 
   removeEntry(id: string): void {
     this.walletStorage.remove(id, this.currentMonth());
+  }
+
+  startEdit(entry: WalletEntry): void {
+    this.editingEntry.set(entry);
+
+    if (entry.kind === 'variable-expense' && entry.installment) {
+      const groupId = entry.installment.groupId;
+      const group = this.entries().filter(
+        (item) => item.kind === 'variable-expense' && item.installment?.groupId === groupId,
+      );
+
+      this.editForm.reset({
+        description: stripInstallmentSuffix(entry.description),
+        value: sumValues(group),
+        installments: entry.installment.total,
+      });
+      return;
+    }
+    this.editForm.reset({ description: entry.description, value: entry.value, installments: 1 });
+  }
+
+  saveEdit(): void {
+    const entry = this.editingEntry();
+
+    if (!entry || this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.editForm.getRawValue();
+    const description = (raw.description ?? '').trim();
+    const value = Number(raw.value);
+
+    if (entry.kind === 'variable-expense' && entry.installment) {
+      this.walletStorage.editInstallmentGroup(entry.installment.groupId, {
+        description,
+        total: value,
+        installments: Number(raw.installments),
+      });
+    } else if (entry.kind === 'fixed-expense') {
+      this.walletStorage.editFixedFromMonth(entry.id, this.currentMonth(), { description, value });
+    } else {
+      this.walletStorage.update(entry.id, { description, value });
+    }
+
+    this.editingEntry.set(null);
+  }
+
+  /** Chamado quando o modal muda de estado: ao fechar, cancela a edição */
+  onEditModalChange(open: boolean): void {
+    if (!open) {
+      this.editingEntry.set(null);
+    }
   }
 
   togglePaidStatus(entry: WalletEntry): void {
@@ -213,37 +263,6 @@ export class App {
     window.print();
   }
 
-  updateCurrentMonth(value: string): void {
-    this.currentMonth.set(value);
-    this.viewedYear.set(Number(value.slice(0, 4)));
-    this.monthPickerOpen.set(false);
-  }
-
-  toggleMonthPicker(): void {
-    this.monthPickerOpen.update((isOpen) => !isOpen);
-  }
-
-  changeYear(offset: number): void {
-    this.viewedYear.update((year) => year + offset);
-  }
-
-  entriesByKind(kind: TransactionKind): WalletEntry[] {
-    return this.selectedMonthEntries().filter((entry) => entry.kind === kind);
-  }
-
-  openBackupHelp(): void {
-    this.backupHelpOpen.set(true);
-  }
-
-  openReport(): void {
-    this.reportOpen.set(true);
-  }
-
-  closeModals(): void {
-    this.backupHelpOpen.set(false);
-    this.reportOpen.set(false);
-  }
-
   private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
     if (form.invalid) {
       form.markAllAsTouched();
@@ -282,10 +301,5 @@ export class App {
       entry.month <= this.currentMonth() &&
       (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
     );
-  }
-
-  private formatMonthName(monthIndex: number): string {
-    const date = new Date(this.viewedYear(), monthIndex, 1);
-    return new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(date);
   }
 }

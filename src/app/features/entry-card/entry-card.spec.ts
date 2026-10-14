@@ -64,4 +64,14 @@ describe('EntryCard', () => {
 
     expect(removedIds).toEqual(['abc']);
   });
+
+  it('avisa o pai quando o usuário clica em editar', async () => {
+    const edited: WalletEntry[] = [];
+    fixture.componentInstance.edit.subscribe((entry) => edited.push(entry));
+
+    await openList();
+    element.querySelector<HTMLButtonElement>('[aria-label^="Editar"]')!.click();
+
+    expect(edited).toEqual([internet]);
+  });
 });

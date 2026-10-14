@@ -22,6 +22,7 @@ export class EntryCard {
   readonly month = input.required<MonthKey>();
   readonly showPaidStatus = input(false);
   readonly variant = input<'light' | 'dark'>('light');
+  readonly edit = output<WalletEntry>();
 
   //output
   readonly remove = output<string>();
