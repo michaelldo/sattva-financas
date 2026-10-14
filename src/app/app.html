@@ -1,4 +1,12 @@
 <main class="wallet-shell">
+
+  <button class="menu-button" type="button" (click)="menuOpen.set(true)" aria-label="Abrir menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+
   <header class="hero">
     <img src="sattva.png" alt="Sattva Finanças" class="brand-logo" />
     <p>Controle suas finanças pessoais de forma simples e eficiente.</p>
@@ -168,21 +176,26 @@
     </app-entry-card>
   </section>
 
-  <footer class="app-footer">
-    <div class="footer-actions">
-      <button type="button" (click)="exportBackup()">Exportar backup</button>
-      <label class="import-button">
-        Importar backup
-        <input type="file" accept=".json,application/json" (change)="importBackup($event)" />
-      </label>
-      <button type="button" (click)="backupHelpOpen.set(true)">Como usar</button>
-      <button type="button" (click)="reportOpen.set(true)">Relatório</button>
-    </div>
-    @if (importMessage()) {
-      <p class="import-message">{{ importMessage() }}</p>
-    }
-    <small>Versao {{ appVersion }}</small>
-  </footer>
+  <app-modal heading="Menu" variant="drawer" [(open)]="menuOpen">
+    <nav class="side-menu" aria-label="Menu Principal">
+      <section>
+        <h3>Seus dados</h3>
+        <button class="menu-item" type="button" (click)="exportBackup()">Exportar Backup</button>
+        <label class="menu-item">
+          Importar backup
+          <input type="file" accept=".json.application/json" (change)="importBackup($event)" />
+        </label>
+      </section>
+
+      <section>
+        <h3>Ferramentas</h3>
+        <button class="menu-item" type="button" (click)="openFromMenu('report')">Relatório</button>
+        <button class="menu-item" type="button" (click)="openFromMenu('help')">Como Usar</button>
+      </section>
+
+      <small class="app-version">Versão; {{ appVersion }}</small>
+    </nav>
+  </app-modal>
 
   <app-modal heading="Backup dos dados" [(open)]="backupHelpOpen">
     <div class="modal-content">
@@ -242,6 +255,6 @@
       </div>
     </form>
   </app-modal>
-
+  <app-toast-container />
   <pre class="print-report">{{ reportText() }}</pre>
 </main>

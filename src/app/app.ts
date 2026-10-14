@@ -16,6 +16,8 @@ import { EntryCard } from './features/entry-card/entry-card';
 import { MonthPicker } from './features/month-picker/month-picker';
 import { Modal } from './shared/components/modal/modal';
 import { version } from '../../package.json';
+import { ToastContainer } from './shared/components/toast-container/toast-container';
+import { ToastService } from './core/services/toast.service';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +30,7 @@ import { version } from '../../package.json';
     EntryCard,
     MonthPicker,
     Modal,
+    ToastContainer,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -38,13 +41,16 @@ export class App {
   private readonly swUpdate = inject(SwUpdate, { optional: true });
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
+  private readonly toast = inject(ToastService);
 
   readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
   readonly viewedYear = signal(Number(this.currentMonth().slice(0, 4)));
   readonly backupHelpOpen = signal(false);
   readonly reportOpen = signal(false);
+  readonly menuOpen = signal(false);
   readonly editingEntry = signal<WalletEntry | null>(null);
+
   readonly editForm = this.formBuilder.group({
     description: ['', Validators.required],
     value: [null as number | null, [Validators.required, Validators.min(0.01)]],
@@ -54,9 +60,7 @@ export class App {
     const entry = this.editingEntry();
     return entry?.kind === 'variable-expense' && entry.installment ? entry.installment : null;
   });
-  readonly importMessage = signal('');
   readonly entries = this.walletStorage.entries;
-
   readonly incomeForm = this.createMoneyForm();
   readonly fixedExpenseForm = this.createMoneyForm();
   readonly variableExpenseForm = this.formBuilder.group({
@@ -66,15 +70,12 @@ export class App {
     installments: [1, [Validators.required, Validators.min(1)]],
   });
   readonly savingForm = this.createMoneyForm();
-
   readonly selectedMonthEntries = computed(() =>
     this.entries()
       .filter((entry) => this.isEntryVisibleInCurrentMonth(entry))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
-
   readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
-
   readonly summary = computed<WalletSummary>(() => {
     const groups = this.entriesByKind();
     const income = sumValues(groups.income);
@@ -89,7 +90,6 @@ export class App {
       balance: income - fixedExpenses - variableExpenses - savings,
     };
   });
-
   readonly reportText = computed(() =>
     this.report.build({
       month: this.currentMonth(),
@@ -242,10 +242,11 @@ export class App {
     try {
       const entries = await this.backup.readFile(file);
       this.walletStorage.replaceAll(entries);
-      this.importMessage.set('Backup importado com sucesso!');
+      this.menuOpen.set(false);
+      this.toast.success('Backup importado com sucesso!');
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Erro desconhecido';
-      this.importMessage.set(`Não foi possível importar este arquivo. ${reason}`);
+      this.toast.error(`Não foi possível importar este arquivo. ${reason}`);
     } finally {
       input.value = '';
     }
@@ -254,13 +255,19 @@ export class App {
   async copyReport(): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.reportText());
+      this.toast.success('Relatório copiado!');
     } catch {
-      this.importMessage.set(`Não foi possível copiar o relatório.`);
+      this.toast.error(`Não foi possível copiar o relatório.`);
     }
   }
 
   printReport(): void {
     window.print();
+  }
+
+  openFromMenu(modal: 'report' | 'help'): void {
+    this.menuOpen.set(false);
+    (modal === 'report' ? this.reportOpen : this.backupHelpOpen).set(true);
   }
 
   private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
@@ -302,4 +309,6 @@ export class App {
       (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
     );
   }
+
+  protected readonly open = open;
 }

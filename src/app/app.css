@@ -239,45 +239,68 @@ dd {
   font-size: 1.55rem;
 }
 
-.app-footer {
-  margin-top: 48px;
-  color: #84dbab;
-  text-align: center;
-  font-size: 0.85rem;
-}
-
-.footer-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.footer-actions button,
-.import-button,
-.report-actions button {
+.menu-button {
+  position: absolute;
+  z-index: 5;
+  top: 16px;
+  left: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 999px;
   background: #284d52;
   color: #f4f4f4;
-  padding: 8px 14px;
-  font-weight: 800;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 30%);
   cursor: pointer;
 }
 
-.footer-actions button:hover,
-.import-button:hover,
+.side-menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+  padding: 22px;
+}
+
+.side-menu section {
+  display: grid;
+  gap: 8px;
+}
+
+.side-menu h3 {
+  margin: 0 0 4px;
+  color: #84dbab;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu-item,
+.report-actions button {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: #284d52;
+  color: #f4f4f4;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-within,
 .report-actions button:hover {
   background: #84dbab;
   color: #173036;
 }
 
-.import-button input {
+.menu-item input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -285,9 +308,10 @@ dd {
   pointer-events: none;
 }
 
-.import-message {
-  margin: 0 0 10px;
-  color: #f4f4f4;
+.app-version {
+  margin-top: auto;
+  color: #84dbab;
+  text-align: center;
 }
 
 .edit-hint {
@@ -460,7 +484,7 @@ dd {
   .month-filter,
   .entry-grid,
   .lower-grid,
-  .app-footer{
+  .menu-button{
     display: none !important;
   }
 

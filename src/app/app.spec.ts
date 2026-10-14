@@ -302,4 +302,26 @@ describe('App', () => {
     app.currentMonth.set('2026-08');
     expect(app.summary().fixedExpenses).toBe(1200);
   });
+
+  it('o menu lateral abre pelo botão e leva ao relatório', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const element: HTMLElement = fixture.nativeElement;
+    await fixture.whenStable();
+
+    element.querySelector<HTMLButtonElement>('[aria-label="Abrir menu"]')!.click();
+    await fixture.whenStable();
+
+    const menu = element.querySelector('.side-menu')!.closest('dialog')!;
+    expect(menu.open).toBe(true);
+
+    const reportButton = Array.from(menu.querySelectorAll<HTMLButtonElement>('.menu-item')).find(
+      (button) => button.textContent?.includes('Relatório'),
+    )!;
+    reportButton.click();
+    await fixture.whenStable();
+
+    expect(app.menuOpen()).toBe(false);
+    expect(app.reportOpen()).toBe(true);
+  });
 });
