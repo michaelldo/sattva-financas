@@ -70,6 +70,16 @@ export function sumValues(entries: readonly WalletEntry[]): number {
   return entries.reduce((sum, entry) => sum + entry.value, 0);
 }
 
+export function sumUnpaid(entries:  readonly WalletEntry[], month: MonthKey): number {
+  return sumValues(
+    entries.filter(
+      (entry) =>
+        (entry.kind === 'fixed-expense' || entry.kind === 'variable-expense') &&
+        !isEntryPaidInMonth(entry, month),
+    ),
+  );
+}
+
 export function assertNever(valeu: never): never {
   throw new Error(`Tipo de lançamento não tratado: ${String(valeu)}`);
 }

@@ -30,6 +30,13 @@
           Saidas
         </span>
         <strong>{{ summary().fixedExpenses + summary().variableExpenses + summary().savings | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+        @if (summary().fixedExpenses + summary().variableExpenses > 0) {
+          @if (amountToPay() > 0) {
+            <small class="metric__hint is-pending">Falta pagar: {{ amountToPay() | currency }}</small>
+          } @else {
+            <small class="metric__hint is-done">Tudo pago ✓</small>
+          }
+        }
       </div>
 
       <div class="metric metric--balance" [ngClass]="{ 'is-negative': summary().balance < 0 }">

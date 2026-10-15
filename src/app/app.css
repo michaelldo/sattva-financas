@@ -72,6 +72,19 @@ h1 {
   line-height: 1;
 }
 
+.metric__hint {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.metric__hint.is-pending {
+  color: #f5c26b;
+}
+
+.metric__hint.is-done {
+  color: #84dbab;
+}
+
 .metric--balance {
   min-height: 112px;
   justify-content: center;

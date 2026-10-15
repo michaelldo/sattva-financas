@@ -7,7 +7,7 @@ import { getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import { buildInstallments, stripInstallmentSuffix } from './core/utils/installments';
-import { groupByKind, isEntryPaidInMonth, sumValues } from './core/utils/entry.utils';
+import { groupByKind, isEntryPaidInMonth, sumUnpaid, sumValues } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
@@ -76,6 +76,13 @@ export class App {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
   readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
+  readonly amountToPay = computed(() => {
+    const groups = this.entriesByKind();
+    return sumUnpaid(
+      [...groups['fixed-expense'], ...groups['variable-expense']],
+      this.currentMonth(),
+    );
+  });
   readonly summary = computed<WalletSummary>(() => {
     const groups = this.entriesByKind();
     const income = sumValues(groups.income);

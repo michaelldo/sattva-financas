@@ -1,4 +1,4 @@
-import { createEntry, groupByKind, isEntryPaidInMonth, sumValues } from './entry.utils';
+import { createEntry, groupByKind, isEntryPaidInMonth, sumUnpaid, sumValues } from './entry.utils';
 
 describe('entry.utils', () => {
   it('cria gasto variável como não pago', () => {
@@ -43,7 +43,29 @@ describe('entry.utils', () => {
     expect(groups.saving).toEqual([]);
     expect(sumValues(groups.income)).toBe(2550);
 
-    // Tipagem: sem nenhum `if`, o TypeScript já sabe que é FixedExpenseEntry
     expect(groups['fixed-expense'][0].paidMonths).toEqual({});
+  });
+
+  it('soma só os gastos não pagos do mês', () => {
+    const month = '2026-10';
+    const rent = {
+      ...createEntry({ kind: 'fixed-expense', description: 'Aluguel', value: 1000, month }),
+      paidMonths: { [month]: true },
+    };
+    const market = createEntry({
+      kind: 'variable-expense',
+      description: 'Mercado',
+      value: 300,
+      month,
+    });
+    const internet = createEntry({
+      kind: 'fixed-expense',
+      description: 'Internet',
+      value: 120,
+      month,
+    });
+    const salary = createEntry({ kind: 'income', description: 'Salário', value: 5000, month });
+
+    expect(sumUnpaid([rent, market, internet, salary], month)).toBe(420);
   });
 });

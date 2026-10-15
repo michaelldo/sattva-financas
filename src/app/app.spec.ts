@@ -324,4 +324,25 @@ describe('App', () => {
     expect(app.menuOpen()).toBe(false);
     expect(app.reportOpen()).toBe(true);
   });
+
+  it('mostra quanto falta pagar no mês', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
+    app.addFixedExpense();
+    app.variableExpenseForm.setValue({
+      description: 'Mercado',
+      value: 300,
+      isInstallment: false,
+      installments: 1,
+    });
+    app.addVariableExpense();
+
+    expect(app.amountToPay()).toBe(1300);
+
+    app.togglePaidStatus(app.entriesByKind()['fixed-expense'][0]);
+
+    expect(app.amountToPay()).toBe(300);
+  });
 });
