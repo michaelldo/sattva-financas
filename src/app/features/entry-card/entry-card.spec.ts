@@ -74,4 +74,23 @@ describe('EntryCard', () => {
 
     expect(edited).toEqual([internet]);
   });
+
+  it('mostra quanto falta das parcelas quando recebe o mapa', async () => {
+    fixture.componentRef.setInput('remaining', new Map([['abc', 100]]));
+    await openList();
+
+    expect(element.querySelector('.remaining')?.textContent).toContain('faltam');
+    expect(element.querySelector('.remaining')?.textContent).toContain('100');
+
+    fixture.componentRef.setInput('remaining', new Map([['abc', 0]]));
+    await fixture.whenStable();
+
+    expect(element.querySelector('.remaining')?.textContent?.trim()).toBe('(última parcela)');
+  });
+
+  it('não mostra nada para lançamentos que não são parcelados', async () => {
+    await openList();
+
+    expect(element.querySelector('.remaining')).toBeNull();
+  });
 });

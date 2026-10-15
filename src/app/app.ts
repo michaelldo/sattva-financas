@@ -6,7 +6,7 @@ import { filter } from 'rxjs';
 import { getCurrentMonth } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
-import { buildInstallments, stripInstallmentSuffix } from './core/utils/installments';
+import { buildInstallments, remainingAfterInstallment, stripInstallmentSuffix } from './core/utils/installments';
 import { groupByKind, isEntryPaidInMonth, sumUnpaid, sumValues } from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
@@ -76,6 +76,8 @@ export class App {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
   readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
+  /** para cada parcela, quanto falta pagar */
+  readonly installmentsRemaining = computed(() => remainingAfterInstallment(this.entries()));
   readonly amountToPay = computed(() => {
     const groups = this.entriesByKind();
     return sumUnpaid(

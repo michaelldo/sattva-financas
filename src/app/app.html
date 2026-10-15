@@ -59,6 +59,7 @@
       heading="Gastos Variáveis"
       itemLabel="gasto variável"
       [entries]="entriesByKind()['variable-expense']"
+      [remaining]="installmentsRemaining()"
       [month]="currentMonth()"
       [showPaidStatus]="true"
       (edit)="startEdit($event)"

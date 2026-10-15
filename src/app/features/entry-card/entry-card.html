@@ -17,7 +17,13 @@
     @for (entry of entries(); track entry.id) {
       @let paid = paidIds().has(entry.id);
       <li>
-        <span class="description">{{ entry.description }}</span>
+        @let rest = remaining().get(entry.id);
+        <span class="description">
+          {{ entry.description }}
+          @if (rest !== undefined) {
+            <small class="remaining">({{ rest > 0 ? 'faltam: ' + (rest | currency) : 'última parcela' }})</small>
+          }
+        </span>
 
         <div class="details">
           <span class="branch" aria-hidden="true">└─</span>

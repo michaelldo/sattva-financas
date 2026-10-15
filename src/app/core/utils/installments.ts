@@ -1,5 +1,6 @@
-import { NewEntryData } from './entry.utils';
+import { NewEntryData, sumValues } from './entry.utils';
 import { addMonths, MonthKey } from './month.utils';
+import { VariableExpenseEntry, WalletEntry } from '../models/wallet.models';
 
 export function splitIntoInstallments(total: number, count: number): number[] {
   const totalCents = Math.round(total * 100);
@@ -39,4 +40,28 @@ export function buildInstallments(plan: InstallmentPlan): NewEntryData[] {
 
 export function stripInstallmentSuffix(description: string): string {
   return description.replace(/\s+Parc\.:\d+\/\d+$/i, '');
+}
+
+export function remainingAfterInstallment(entries: readonly WalletEntry[]): Map<string, number> {
+  const groups = new Map<string, VariableExpenseEntry[]>();
+
+  for (const entry of entries){
+    if (entry.kind === 'variable-expense' && entry.installment) {
+      const group = groups.get(entry.installment.groupId) ?? [];
+      group.push(entry);
+      groups.set(entry.installment.groupId, group);
+    }
+  }
+
+  const remaining = new Map<string, number>();
+
+  for (const group of groups.values()) {
+    for (const entry of group){
+      const later = group.filter(
+        (other) => other.installment!.current > entry.installment!.current);
+      remaining.set(entry.id, sumValues(later));
+    }
+  }
+
+  return remaining;
 }

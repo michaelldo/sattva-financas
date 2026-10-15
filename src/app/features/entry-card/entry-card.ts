@@ -22,9 +22,10 @@ export class EntryCard {
   readonly month = input.required<MonthKey>();
   readonly showPaidStatus = input(false);
   readonly variant = input<'light' | 'dark'>('light');
-  readonly edit = output<WalletEntry>();
+  readonly remaining = input<ReadonlyMap<string, number>>(new Map());
 
   //output
+  readonly edit = output<WalletEntry>();
   readonly remove = output<string>();
   readonly togglePaid = output<WalletEntry>();
 
