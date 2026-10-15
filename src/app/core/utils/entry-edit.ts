@@ -107,3 +107,19 @@ export function editInstallmentGroup(
   const others = entries.filter((entry) => !groupIds.has(entry.id));
   return [...others, ...rebuilt];
 }
+
+/**
+ * Desfaz uma alteração: devolve à lista as versões originais dos lançamentos
+ */
+export function restoreEntries(
+  entries: WalletEntry[],
+  originals: readonly WalletEntry[]
+): WalletEntry[] {
+  const originalById = new Map(originals.map((entry) => [entry.id, entry]));
+  const currentIds = new Set(entries.map((entry) => entry.id));
+
+  const updated =entries.map((entry) => originalById.get(entry.id) ?? entry);
+  const missing = originals.filter((entry) => !currentIds.has(entry.id));
+
+  return [...updated, ...missing];
+}

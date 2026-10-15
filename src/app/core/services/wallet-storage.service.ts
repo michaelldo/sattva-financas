@@ -5,10 +5,11 @@ import { createId } from '../../id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
 import { parseWalletEntry } from '../utils/entry-parser';
 import {
-  EntryChanges,
   editFixedFromMonth,
   editInstallmentGroup,
+  EntryChanges,
   InstallmentChanges,
+  restoreEntries,
 } from '../utils/entry-edit';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
@@ -65,12 +66,15 @@ export class WalletStorageService {
       .trim();
   }
 
-  remove(id: string, month: string): void {
+  /**
+   * Remove um lançamento e permite voltar a versão original do lançamento
+   */
+  remove(id: string, month: string): WalletEntry[] {
     const entries = this.entriesSignal();
     const entryToRemove = entries.find((entry) => entry.id === id);
 
     if (!entryToRemove) {
-      return;
+      return [];
     }
 
     if (entryToRemove.kind === 'fixed-expense') {
@@ -81,10 +85,18 @@ export class WalletStorageService {
             : entry,
         ),
       );
-      return;
+      return [entryToRemove];
     }
+    const removed = entries.filter((entry) => this.shouldRemoveEntry(entry, entryToRemove));
+    this.save(entries.filter((entry) => !removed.includes(entry)));
+    return removed;
+  }
 
-    this.save(entries.filter((entry) => !this.shouldRemoveEntry(entry, entryToRemove)));
+  /**
+   * Desfaz uma remoção de lançamento
+   */
+  restore(originals: readonly WalletEntry[]): void {
+    this.save(restoreEntries(this.entriesSignal(), originals));
   }
 
   togglePaid(id: string, month: string): void {

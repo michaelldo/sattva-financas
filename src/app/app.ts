@@ -172,7 +172,24 @@ export class App {
   }
 
   removeEntry(id: string): void {
-    this.walletStorage.remove(id, this.currentMonth());
+    const removed = this.walletStorage.remove(id, this.currentMonth());
+
+    if (removed.length === 0) {
+      return;
+    }
+
+    this.toast.show(this.removalMessage(removed), {
+      duration: 6000,
+      action: { label: 'Desfazer', run: () => this.walletStorage.restore(removed) }
+    })
+  }
+
+  private removalMessage(removed: WalletEntry[]): string {
+    if (removed[0].kind === 'fixed-expense'){
+      return 'Gasto fixo encerrado!';
+    }
+
+    return removed.length > 1 ? `${removed.length} parcelas excluídas.` : 'Lançamento excluído!';
   }
 
   startEdit(entry: WalletEntry): void {

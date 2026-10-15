@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 import { appConfig } from './app.config';
+import { ToastService } from './core/services/toast.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -344,5 +345,48 @@ describe('App', () => {
     app.togglePaidStatus(app.entriesByKind()['fixed-expense'][0]);
 
     expect(app.amountToPay()).toBe(300);
+  });
+
+
+  it('permite desfazer a exclusão pelo aviso', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const toasts = TestBed.inject(ToastService);
+
+    app.variableExpenseForm.setValue({
+      description: 'Notebook',
+      value: 3000,
+      isInstallment: true,
+      installments: 3,
+    });
+    app.addVariableExpense();
+    const before = app.entries();
+
+    app.removeEntry(before[0].id);
+
+    expect(app.entries()).toEqual([]);
+    expect(toasts.toasts()[0]).toMatchObject({ message: '3 parcelas excluídas.' });
+
+    toasts.toasts()[0].action!.run();
+
+    expect(app.entries()).toEqual(before);
+  });
+
+  it('desfazer o encerramento de um gasto fixo volta a mostrá-lo nos meses seguintes', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const toasts = TestBed.inject(ToastService);
+
+    app.currentMonth.set('2026-06');
+    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
+    app.addFixedExpense();
+
+    app.currentMonth.set('2026-08');
+    app.removeEntry(app.entriesByKind()['fixed-expense'][0].id);
+    expect(app.entriesByKind()['fixed-expense']).toHaveLength(0);
+
+    toasts.toasts()[0].action!.run();
+
+    expect(app.entriesByKind()['fixed-expense']).toHaveLength(1);
   });
 });
