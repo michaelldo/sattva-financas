@@ -21,7 +21,7 @@
           <img src="iconoir_money-square-solid.svg" alt="" />
           Entradas
         </span>
-        <strong>{{ summary().income | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+        <strong>{{ summary().income | currency }}</strong>
       </div>
 
       <div class="metric">
@@ -29,7 +29,7 @@
           <img src="iconoir_money-square-solid.svg" alt="" />
           Saidas
         </span>
-        <strong>{{ summary().fixedExpenses + summary().variableExpenses + summary().savings | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+        <strong>{{ summary().fixedExpenses + summary().variableExpenses + summary().savings | currency }}</strong>
         @if (summary().fixedExpenses + summary().variableExpenses > 0) {
           @if (amountToPay() > 0) {
             <small class="metric__hint is-pending">Falta pagar: {{ amountToPay() | currency }}</small>
@@ -44,7 +44,7 @@
           <img src="iconoir_money-square-solid.svg" alt="" />
           Saldo
         </span>
-        <strong>{{ summary().balance | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</strong>
+        <strong>{{ summary().balance | currency }}</strong>
       </div>
     </div>
   </section>
@@ -138,24 +138,24 @@
     <article class="summary-panel">
       <header>
         <h2>Resumo</h2>
-        <span>{{ currentMonth() + '-01' | date: 'MMMM y' : undefined : 'pt-BR' }}</span>
+        <span>{{ currentMonth() + '-01' | date: 'MMMM y' }}</span>
       </header>
       <dl>
         <div>
           <dt>Gastos Fixos</dt>
-          <dd>{{ summary().fixedExpenses | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ summary().fixedExpenses | currency }}</dd>
         </div>
         <div>
           <dt>Gastos Variaveis</dt>
-          <dd>{{ summary().variableExpenses | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ summary().variableExpenses | currency }}</dd>
         </div>
         <div>
           <dt>Renda mensal</dt>
-          <dd>{{ summary().income | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ summary().income | currency }}</dd>
         </div>
         <div>
           <dt>Cofrinho</dt>
-          <dd>{{ summary().savings | currency: 'BRL' : 'symbol' : '1.2-2' : 'pt-BR' }}</dd>
+          <dd>{{ summary().savings | currency }}</dd>
         </div>
       </dl>
     </article>
@@ -251,7 +251,7 @@
       @if (editingEntry()?.kind === 'fixed-expense') {
         <p class="edit-hint">
           A alteração vale a partir de
-          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' : undefined : 'pt-BR' }}</strong>.
+          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' }}</strong>.
           Os meses Anteriores continuarão com os dados antigos.
         </p>
       }
