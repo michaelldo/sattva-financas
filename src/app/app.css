@@ -320,6 +320,16 @@ dd {
   font-weight: 700;
 }
 
+.sync-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #84dbab;
+}
+
+.sync-status.is-warning {
+  color: #f5c86b;
+}
+
 .menu-item input {
   position: absolute;
   width: 1px;

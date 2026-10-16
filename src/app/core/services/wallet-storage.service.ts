@@ -13,12 +13,15 @@ import {
 } from '../utils/entry-edit';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
+const MODIFIED_AT_KEY = 'sattva-wallet-modified-at';
 
 @Injectable({ providedIn: 'root' })
 export class WalletStorageService {
   private readonly entriesSignal = signal<WalletEntry[]>(this.readEntries());
+  private readonly lastModifiedSignal = signal<string>(this.readModifiedAt());
 
   readonly entries = this.entriesSignal.asReadonly();
+  readonly lastModified = this.lastModifiedSignal.asReadonly();
 
   add(data: NewEntryData): void {
     this.save([...this.entriesSignal(), createEntry(data)]);
@@ -121,13 +124,28 @@ export class WalletStorageService {
     );
   }
 
-  replaceAll(entries: WalletEntry[]): void {
-    this.save(entries);
+  /**
+   * Substitui todos os lançamentos e permite manter a data original
+   * quando os dados vem do google drive
+   */
+  replaceAll(entries: WalletEntry[], modifiedAt?: string): void {
+    this.save(entries, modifiedAt);
   }
 
-  private save(entries: WalletEntry[]): void {
+  private save(entries: WalletEntry[], modifiedAt = new Date().toISOString()): void {
     this.entriesSignal.set(entries);
+    this.lastModifiedSignal.set(modifiedAt);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    localStorage.setItem(MODIFIED_AT_KEY, modifiedAt);
+  }
+
+  private readModifiedAt(): string {
+    const stored = localStorage.getItem(MODIFIED_AT_KEY);
+    if (stored) {
+      return stored;
+    }
+    //Dados de antes desta versão: se existe algo salvo, consideramos "agora".
+    return this.entriesSignal().length > 0 ? new Date().toISOString() : new Date(0).toISOString();
   }
 
   private readEntries(): WalletEntry[] {

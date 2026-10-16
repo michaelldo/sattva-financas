@@ -23,6 +23,14 @@ import { version } from '../../package.json';
 import { ToastContainer } from './shared/components/toast-container/toast-container';
 import { ToastService } from './core/services/toast.service';
 import { GoogleAuthService } from './core/services/google-auth.service';
+import { SyncAction } from './core/services/sync.utils';
+import { DriveSyncService } from './core/services/drive-sync.service';
+
+const SYNC_MESSAGES: Record<SyncAction, string> = {
+  download: 'Dados atualizados com o backup do Drive.',
+  upload: 'Backup salvo no Drive.',
+  none: 'Tudo sincronizado.',
+};
 
 @Component({
   selector: 'app-root',
@@ -48,6 +56,7 @@ export class App {
   private readonly toast = inject(ToastService);
   protected readonly googleAuth = inject(GoogleAuthService);
   protected readonly Kind = TransactionKind;
+  protected readonly driveSync = inject(DriveSyncService);
 
   readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
@@ -303,14 +312,27 @@ export class App {
   async connectDrive(): Promise<void> {
     try {
       await this.googleAuth.connect();
-      this.toast.success('Google Drive conectado!');
     } catch (error) {
       this.toast.error(error instanceof Error ? error.message : 'Não foi possível conectar.');
+      return;
+    }
+
+    await this.syncDrive();
+  }
+
+  async syncDrive(): Promise<void> {
+    try {
+      await this.googleAuth.getAccessToken();
+      const action = await this.driveSync.syncNow();
+      this.toast.success(SYNC_MESSAGES[action]);
+    } catch {
+      this.toast.error('Não foi possível sincronizar com o Google Drive.');
     }
   }
 
   disconnectDrive(): void {
     this.googleAuth.disconnect();
+    this.driveSync.reset();
     this.toast.show('Google drive desconectado.');
   }
 

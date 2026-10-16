@@ -22,7 +22,7 @@ export class BackupService {
     const link = document.createElement('a');
 
     link.href = url;
-    link.download = `sattva-backupp-${getCurrentMonth()}.json`;
+    link.download = `sattva-backup-${getCurrentMonth()}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url));
   }
@@ -32,14 +32,21 @@ export class BackupService {
   }
 
   parse(json: string): WalletEntry[] {
+    return this.parseBackup(json).entries;
+  }
+
+  /** Lê o backup e retorna as entradas e a data de exportação */
+  parseBackup(json: string): { entries: WalletEntry[]; exportedAt: string | null } {
     const data: unknown = JSON.parse(json);
+    const exportedAt =
+      isRecord(data) && typeof data['exportedAt'] === 'string' ? data['exportedAt'] : null;
     const rawEntries = Array.isArray(data) ? data : isRecord(data) ? data['entries'] : undefined;
 
     if (!Array.isArray(rawEntries)) {
       throw new Error('Arquivo de backup inválido');
     }
 
-    return rawEntries.map((raw, index) => {
+    const entries = rawEntries.map((raw, index) => {
       try {
         return parseWalletEntry(raw);
       } catch (error) {
@@ -47,5 +54,7 @@ export class BackupService {
         throw new Error(`Item ${index + 1}: ${reason}`);
       }
     });
+
+    return { entries, exportedAt };
   }
 }

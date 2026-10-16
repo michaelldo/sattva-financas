@@ -3,6 +3,7 @@ import { App } from './app';
 import { appConfig } from './app.config';
 import { ToastService } from './core/services/toast.service';
 import { isEntryPaidInMonth } from './core/utils/entry.utils';
+import { DriveSyncService } from './core/services/drive-sync.service';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -406,6 +407,9 @@ describe('App', () => {
       },
     });
 
+    const syncNow = vi
+      .spyOn(TestBed.inject(DriveSyncService), 'syncNow')
+      .mockResolvedValue('upload');
     const fixture = TestBed.createComponent(App);
     const element: HTMLElement = fixture.nativeElement;
     await fixture.whenStable();
@@ -417,6 +421,8 @@ describe('App', () => {
     await fixture.whenStable();
 
     expect(element.querySelector('.drive-status')?.textContent).toContain('Conectado');
+    expect(syncNow).toHaveBeenCalledOnce();
+    expect(TestBed.inject(ToastService).toasts().at(-1)?.message).toBe('Backup salvo no Drive.');
 
     vi.unstubAllGlobals();
   });

@@ -203,6 +203,33 @@
         @switch (googleAuth.status()) {
           @case ('connected') {
             <p class="drive-status">✓ Conectado</p>
+            <p class="sync-status" [class.is-warning]="driveSync.status() !== 'synced'">
+              @switch (driveSync.status()) {
+                @case ('syncing') {
+                  Sincronizando ...
+                }
+                @case ('synced') {
+                  Sincronizado às {{ driveSync.lastSyncedAt() | date: 'HH:mm' }}
+                }
+                @case ('paused') {
+                  Sessão expirada — toque em Sincronizar agora.
+                }
+                @case ('error') {
+                  Falha ao sincronizar.
+                }
+                @default {
+                  Ainda não sincronizado.
+                }
+              }
+            </p>
+            <button
+              class="menu-item"
+              type="button"
+              [disabled]="driveSync.status() === 'synced'"
+              (click)="syncDrive()"
+            >
+              Sincronizar agora
+            </button>
             <button class="menu-item" type="button" (click)="disconnectDrive()">Desconectar</button>
           }
           @case ('connecting') {
@@ -222,7 +249,7 @@
         <button class="menu-item" type="button" (click)="exportBackup()">Exportar Backup</button>
         <label class="menu-item">
           Importar backup
-          <input type="file" accept=".json.application/json" (change)="importBackup($event)" />
+          <input type="file" accept=".json,application/json" (change)="importBackup($event)" />
         </label>
       </section>
 
@@ -232,7 +259,7 @@
         <button class="menu-item" type="button" (click)="openFromMenu('help')">Como Usar</button>
       </section>
 
-      <small class="app-version">Versão; {{ appVersion }}</small>
+      <small class="app-version">Versão: {{ appVersion }}</small>
     </nav>
   </app-modal>
 

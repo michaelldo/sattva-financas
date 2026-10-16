@@ -40,10 +40,15 @@ export class GoogleAuthService {
     }
   }
 
+  /** Verifica se ainda existe um token valido */
+  hasValidToken(): boolean {
+    return this.accessToken !== null && Date.now() < this.expiresAt - EXPIRY_MARGIN_MS;
+  }
+
   /** Devolve um token valido */
   async getAccessToken(): Promise<string> {
-    if (this.accessToken && Date.now() < this.expiresAt - EXPIRY_MARGIN_MS) {
-      return this.accessToken;
+    if (this.hasValidToken()) {
+      return this.accessToken!;
     }
 
     return this.requestToken('');
