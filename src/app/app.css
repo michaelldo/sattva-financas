@@ -313,6 +313,17 @@ dd {
   color: #173036;
 }
 
+.menu-item:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.drive-status {
+  margin: 0;
+  color: #84dbab;
+  font-weight: 700;
+}
+
 .menu-item input {
   position: absolute;
   width: 1px;

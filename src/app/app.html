@@ -187,6 +187,23 @@
   <app-modal heading="Menu" variant="drawer" [(open)]="menuOpen">
     <nav class="side-menu" aria-label="Menu Principal">
       <section>
+        <h3>Google Drive</h3>
+        @switch (googleAuth.status()){
+          @case ('connected'){
+            <p class="drive-status">✓ Conectado</p>
+            <button class="menu-item" type="button" (click)="disconnectDrive()">Desconectar</button>
+          }
+          @case ('connecting') {
+            <button class="menu-item" type="button" disabled>Conectando...</button>
+          }
+          @default {
+            <button class="menu-item" type="button" (click)="connectDrive()">
+              {{ googleAuth.needsReconnect() ? 'Reconectar Google Drive' : 'Conectar Google Drive'}}
+            </button>
+          }
+        }
+      </section>
+      <section>
         <h3>Seus dados</h3>
         <button class="menu-item" type="button" (click)="exportBackup()">Exportar Backup</button>
         <label class="menu-item">

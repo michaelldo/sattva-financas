@@ -389,4 +389,35 @@ describe('App', () => {
 
     expect(app.entriesByKind()['fixed-expense']).toHaveLength(1);
   });
+
+  it('conecta o Google Drive pelo menu', async () => {
+    vi.stubGlobal('google', {
+      accounts: {
+        oauth2: {
+          revoke: vi.fn(),
+          initTokenClient: (config: google.accounts.oauth2.TokenClientConfig) => ({
+            requestAccessToken: () =>
+              config.callback({
+                access_token: 'token',
+                expires_in: '3600',
+              } as google.accounts.oauth2.TokenResponse),
+          }),
+        },
+      },
+    });
+
+    const fixture = TestBed.createComponent(App);
+    const element: HTMLElement = fixture.nativeElement;
+    await fixture.whenStable();
+
+    const connectButton = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('.menu-item'),
+    ).find((button) => button.textContent?.includes('Conectar Google Drive'))!;
+    connectButton.click();
+    await fixture.whenStable();
+
+    expect(element.querySelector('.drive-status')?.textContent).toContain('Conectado');
+
+    vi.unstubAllGlobals();
+  });
 });

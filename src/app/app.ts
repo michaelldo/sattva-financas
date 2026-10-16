@@ -18,6 +18,7 @@ import { Modal } from './shared/components/modal/modal';
 import { version } from '../../package.json';
 import { ToastContainer } from './shared/components/toast-container/toast-container';
 import { ToastService } from './core/services/toast.service';
+import { GoogleAuthService } from './core/services/google-auth.service';
 
 @Component({
   selector: 'app-root',
@@ -42,6 +43,7 @@ export class App {
   private readonly backup = inject(BackupService);
   private readonly report = inject(ReportService);
   private readonly toast = inject(ToastService);
+  protected readonly googleAuth = inject(GoogleAuthService);
 
   readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
@@ -294,6 +296,20 @@ export class App {
   openFromMenu(modal: 'report' | 'help'): void {
     this.menuOpen.set(false);
     (modal === 'report' ? this.reportOpen : this.backupHelpOpen).set(true);
+  }
+
+  async connectDrive(): Promise<void> {
+    try {
+      await this.googleAuth.connect();
+      this.toast.success('Google Drive conectado!');
+    } catch (error) {
+      this.toast.error(error instanceof Error ? error.message : 'Não foi possível conectar.');
+    }
+  }
+
+  disconnectDrive(): void {
+    this.googleAuth.disconnect();
+    this.toast.show('Google drive desconectado.');
   }
 
   private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
