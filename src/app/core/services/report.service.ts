@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { WalletEntry, WalletSummary } from '../models/wallet.models';
+import { TransactionKind, WalletEntry, WalletSummary } from '../models/wallet.models';
 import { formatMonthLabel, MonthKey } from '../utils/month.utils';
 
 export interface ReportInput {
@@ -18,8 +18,10 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 @Injectable({ providedIn: 'root' })
 export class ReportService {
   build({ month, summary, fixedEntries, allEntries }: ReportInput): string {
-    const variableMonths = this.groupByMonth(this.sortedByKind(allEntries, 'variable-expense'));
-    const savingMonths = this.groupByMonth(this.sortedByKind(allEntries, 'saving'));
+    const variableMonths = this.groupByMonth(
+      this.sortedByKind(allEntries, TransactionKind.VariableExpense),
+    );
+    const savingMonths = this.groupByMonth(this.sortedByKind(allEntries, TransactionKind.Saving));
 
     const lines = [
       `Resumo - ${formatMonthLabel(month)}`,

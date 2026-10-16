@@ -1,17 +1,16 @@
 import { parseWalletEntry } from './entry-parser';
 
 describe('parserWalletEntry', () => {
-
   it('converte o formato antigo de gasto fixo pago para paidMonths ', () => {
     const entry = parseWalletEntry({
       kind: 'fixed-expense',
       description: 'Aluguel',
       value: 1000,
       month: '2026-06',
-      paid: true
+      paid: true,
     });
 
-    expect(entry).toMatchObject({ kind: 'fixed-expense', paidMonths: {'2026-06' : true }});
+    expect(entry).toMatchObject({ kind: 'fixed-expense', paidMonths: { '2026-06': true } });
     expect('paid' in entry).toBe(false);
   });
 
@@ -36,5 +35,4 @@ describe('parserWalletEntry', () => {
   it('rejeita valor zero', () => {
     expect(() => parseWalletEntry({ kind: 'income', value: 0 })).toThrow(/valor inválido/i);
   });
-
 });

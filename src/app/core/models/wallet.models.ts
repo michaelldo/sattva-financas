@@ -1,3 +1,13 @@
+/** Tipo lançamento: funciona como enum */
+export const TransactionKind = {
+  Income: 'income',
+  Saving: 'saving',
+  FixedExpense: 'fixed-expense',
+  VariableExpense: 'variable-expense',
+} as const;
+
+export type TransactionKind = (typeof TransactionKind)[keyof typeof TransactionKind];
+
 interface BaseEntry {
   id: string;
   description: string;
@@ -7,15 +17,15 @@ interface BaseEntry {
 }
 
 export interface IncomeEntry extends BaseEntry {
-  kind: 'income';
+  kind: typeof TransactionKind.Income;
 }
 
 export interface SavingEntry extends BaseEntry {
-  kind: 'saving';
+  kind: typeof TransactionKind.Saving;
 }
 
 export interface FixedExpenseEntry extends BaseEntry {
-  kind: 'fixed-expense';
+  kind: typeof TransactionKind.FixedExpense;
   paidMonths: Record<string, boolean>;
   deletedFromMonth?: string;
 }
@@ -27,14 +37,12 @@ export interface InstallmentInfo {
 }
 
 export interface VariableExpenseEntry extends BaseEntry {
-  kind: 'variable-expense';
+  kind: typeof TransactionKind.VariableExpense;
   paid: boolean;
   installment?: InstallmentInfo;
 }
 
 export type WalletEntry = IncomeEntry | SavingEntry | FixedExpenseEntry | VariableExpenseEntry;
-
-export type TransactionKind = WalletEntry['kind'];
 
 export interface WalletSummary {
   income: number;

@@ -25,14 +25,19 @@ export function createEntry(data: NewEntryData, now: Date = new Date()): WalletE
   };
 
   switch (data.kind) {
-    case 'income':
-      return { ...base, kind: 'income' };
-    case 'saving':
-      return { ...base, kind: 'saving' };
-    case 'fixed-expense':
-      return { ...base, kind: 'fixed-expense', paidMonths: {} };
-    case 'variable-expense':
-      return { ...base, kind: 'variable-expense', paid: false, installment: data.installment };
+    case TransactionKind.Income:
+      return { ...base, kind: TransactionKind.Income };
+    case TransactionKind.Saving:
+      return { ...base, kind: TransactionKind.Saving };
+    case TransactionKind.FixedExpense:
+      return { ...base, kind: TransactionKind.FixedExpense, paidMonths: {} };
+    case TransactionKind.VariableExpense:
+      return {
+        ...base,
+        kind: TransactionKind.VariableExpense,
+        paid: false,
+        installment: data.installment,
+      };
     default:
       assertNever(data.kind);
   }
@@ -40,9 +45,9 @@ export function createEntry(data: NewEntryData, now: Date = new Date()): WalletE
 
 export function isEntryPaidInMonth(entry: WalletEntry, month: MonthKey): boolean {
   switch (entry.kind) {
-    case 'fixed-expense':
+    case TransactionKind.FixedExpense:
       return Boolean(entry.paidMonths[month]);
-    case 'variable-expense':
+    case TransactionKind.VariableExpense:
       return entry.paid;
     default:
       return false;
@@ -51,10 +56,10 @@ export function isEntryPaidInMonth(entry: WalletEntry, month: MonthKey): boolean
 
 export function groupByKind(entries: readonly WalletEntry[]): EntriesByKind {
   const groups: EntriesByKind = {
-    income: [],
-    'fixed-expense': [],
-    'variable-expense': [],
-    saving: [],
+    [TransactionKind.Income]: [],
+    [TransactionKind.FixedExpense]: [],
+    [TransactionKind.VariableExpense]: [],
+    [TransactionKind.Saving]: [],
   };
 
   for (const entry of entries) {
@@ -70,11 +75,12 @@ export function sumValues(entries: readonly WalletEntry[]): number {
   return entries.reduce((sum, entry) => sum + entry.value, 0);
 }
 
-export function sumUnpaid(entries:  readonly WalletEntry[], month: MonthKey): number {
+export function sumUnpaid(entries: readonly WalletEntry[], month: MonthKey): number {
   return sumValues(
     entries.filter(
       (entry) =>
-        (entry.kind === 'fixed-expense' || entry.kind === 'variable-expense') &&
+        (entry.kind === TransactionKind.FixedExpense ||
+          entry.kind === TransactionKind.VariableExpense) &&
         !isEntryPaidInMonth(entry, month),
     ),
   );

@@ -68,7 +68,7 @@ h2 {
   padding-left: 4px;
 }
 
-.brach {
+.branch {
   opacity: 0.5;
   font-family: Consolas, 'Courier New', monospace;
 }
@@ -87,7 +87,7 @@ h2 {
 }
 
 .entry-list li.empty {
-  justify-content:  center;
+  justify-content: center;
   opacity: 0.7;
 }
 
@@ -130,7 +130,7 @@ h2 {
   background: rgb(132 219 171 / 20%);
 }
 
-.remove-buttom:hover {
+.remove-button:hover {
   color: #d84646;
   background: rgb(216 70 70 / 12%);
 }

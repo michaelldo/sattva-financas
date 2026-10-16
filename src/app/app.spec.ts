@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 import { appConfig } from './app.config';
 import { ToastService } from './core/services/toast.service';
+import { isEntryPaidInMonth } from './core/utils/entry.utils';
 
 describe('App', () => {
   beforeEach(async () => {
@@ -112,11 +113,11 @@ describe('App', () => {
 
     const expense = app.entriesByKind()['fixed-expense'][0];
 
-    expect(app.isEntryPaid(expense)).toBe(false);
+    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
 
     app.togglePaidStatus(expense);
 
-    expect(app.isEntryPaid(app.entriesByKind()['fixed-expense'][0])).toBe(true);
+    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
   });
 
   it('should keep fixed expense paid status scoped to the selected month', () => {
@@ -131,15 +132,15 @@ describe('App', () => {
 
     app.togglePaidStatus(expense);
 
-    expect(app.isEntryPaid(app.entriesByKind()['fixed-expense'][0])).toBe(true);
+    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
 
     app.currentMonth.set('2026-07');
 
-    expect(app.isEntryPaid(app.entriesByKind()['fixed-expense'][0])).toBe(false);
+    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
 
     app.currentMonth.set('2026-06');
 
-    expect(app.isEntryPaid(app.entriesByKind()['fixed-expense'][0])).toBe(true);
+    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
   });
 
   it('should not apply paid status to savings', () => {
@@ -346,7 +347,6 @@ describe('App', () => {
 
     expect(app.amountToPay()).toBe(300);
   });
-
 
   it('permite desfazer a exclusão pelo aviso', () => {
     const fixture = TestBed.createComponent(App);

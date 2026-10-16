@@ -1,8 +1,15 @@
 <main class="wallet-shell">
-
   <button class="menu-button" type="button" (click)="menuOpen.set(true)" aria-label="Abrir menu">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
       <path d="M4 6h16M4 12h16M4 18h16" />
     </svg>
   </button>
@@ -29,17 +36,21 @@
           <img src="iconoir_money-square-solid.svg" alt="" />
           Saidas
         </span>
-        <strong>{{ summary().fixedExpenses + summary().variableExpenses + summary().savings | currency }}</strong>
+        <strong>{{
+          summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
+        }}</strong>
         @if (summary().fixedExpenses + summary().variableExpenses > 0) {
           @if (amountToPay() > 0) {
-            <small class="metric__hint is-pending">Falta pagar: {{ amountToPay() | currency }}</small>
+            <small class="metric__hint is-pending"
+              >Falta pagar: {{ amountToPay() | currency }}</small
+            >
           } @else {
             <small class="metric__hint is-done">Tudo pago ✓</small>
           }
         }
       </div>
 
-      <div class="metric metric--balance" [ngClass]="{ 'is-negative': summary().balance < 0 }">
+      <div class="metric metric--balance" [class.is-negative]="summary().balance < 0">
         <span class="metric__label">
           <img src="iconoir_money-square-solid.svg" alt="" />
           Saldo
@@ -58,7 +69,7 @@
     <app-entry-card
       heading="Gastos Variáveis"
       itemLabel="gasto variável"
-      [entries]="entriesByKind()['variable-expense']"
+      [entries]="entriesByKind()[Kind.VariableExpense]"
       [remaining]="installmentsRemaining()"
       [month]="currentMonth()"
       [showPaidStatus]="true"
@@ -67,7 +78,8 @@
       (togglePaid)="togglePaidStatus($event)"
     >
       <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
-        <label>Descrição:
+        <label
+          >Descrição:
           <input type="text" formControlName="description" placeholder="Mercado" />
         </label>
         <label>
@@ -93,7 +105,7 @@
     <app-entry-card
       heading="Gastos Fixos"
       itemLabel="gasto fixo"
-      [entries]="entriesByKind()['fixed-expense']"
+      [entries]="entriesByKind()[Kind.FixedExpense]"
       [month]="currentMonth()"
       [showPaidStatus]="true"
       (edit)="startEdit($event)"
@@ -116,7 +128,7 @@
     <app-entry-card
       heading="Renda Mensal"
       itemLabel="renda"
-      [entries]="entriesByKind().income"
+      [entries]="entriesByKind()[Kind.Income]"
       [month]="currentMonth()"
       (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
@@ -128,7 +140,7 @@
         </label>
         <label>
           R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask>
+          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
         </label>
         <button type="submit">Adicionar</button>
       </form>
@@ -165,7 +177,7 @@
       heading="Cofrinho"
       itemLabel="cofrinho"
       variant="dark"
-      [entries]="entriesByKind().saving"
+      [entries]="entriesByKind()[Kind.Saving]"
       [month]="currentMonth()"
       (edit)="startEdit($event)"
       (remove)="removeEntry($event)"
@@ -188,8 +200,8 @@
     <nav class="side-menu" aria-label="Menu Principal">
       <section>
         <h3>Google Drive</h3>
-        @switch (googleAuth.status()){
-          @case ('connected'){
+        @switch (googleAuth.status()) {
+          @case ('connected') {
             <p class="drive-status">✓ Conectado</p>
             <button class="menu-item" type="button" (click)="disconnectDrive()">Desconectar</button>
           }
@@ -198,7 +210,9 @@
           }
           @default {
             <button class="menu-item" type="button" (click)="connectDrive()">
-              {{ googleAuth.needsReconnect() ? 'Reconectar Google Drive' : 'Conectar Google Drive'}}
+              {{
+                googleAuth.needsReconnect() ? 'Reconectar Google Drive' : 'Conectar Google Drive'
+              }}
             </button>
           }
         }
@@ -266,11 +280,11 @@
         <p class="edit-hint">As parcelas serão recalculadas a partir do valor total.</p>
       }
 
-      @if (editingEntry()?.kind === 'fixed-expense') {
+      @if (editingEntry()?.kind === Kind.FixedExpense) {
         <p class="edit-hint">
           A alteração vale a partir de
-          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' }}</strong>.
-          Os meses Anteriores continuarão com os dados antigos.
+          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' }}</strong
+          >. Os meses Anteriores continuarão com os dados antigos.
         </p>
       }
 

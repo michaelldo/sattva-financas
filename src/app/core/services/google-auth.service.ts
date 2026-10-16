@@ -87,8 +87,8 @@ export class GoogleAuthService {
     });
   }
 
-  private loadScript(): Promise<void>{
-    if (typeof google !== 'undefined' && google.accounts?.oauth2){
+  private loadScript(): Promise<void> {
+    if (typeof google !== 'undefined' && google.accounts?.oauth2) {
       return Promise.resolve();
     }
 
@@ -116,7 +116,7 @@ export class GoogleAuthService {
       } else {
         localStorage.removeItem(CONNECTED_FLAG_KEY);
       }
-    }catch {
+    } catch {
       //LocalStorage indisponível ( ex: modo privado )
     }
   }
@@ -125,7 +125,7 @@ export class GoogleAuthService {
 function readConnectedFlag(): boolean {
   try {
     return localStorage.getItem(CONNECTED_FLAG_KEY) === 'true';
-  }catch {
+  } catch {
     return false;
   }
 }

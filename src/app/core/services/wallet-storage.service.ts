@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { WalletEntry } from '../models/wallet.models';
+import { TransactionKind, WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth } from '../utils/month.utils';
 import { createId } from '../../id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
@@ -33,7 +33,7 @@ export class WalletStorageService {
     const normalizedDescription = this.normalizeDescription(entry.description);
     const existingEntry = this.entriesSignal().find(
       (e) =>
-        e.kind === 'saving' &&
+        e.kind === TransactionKind.Saving &&
         e.month === entry.month &&
         this.normalizeDescription(e.description) === normalizedDescription,
     );
@@ -77,10 +77,10 @@ export class WalletStorageService {
       return [];
     }
 
-    if (entryToRemove.kind === 'fixed-expense') {
+    if (entryToRemove.kind === TransactionKind.FixedExpense) {
       this.save(
         entries.map((entry) =>
-          entry.id === id && entry.kind === 'fixed-expense'
+          entry.id === id && entry.kind === TransactionKind.FixedExpense
             ? { ...entry, deletedFromMonth: month }
             : entry,
         ),
@@ -107,22 +107,18 @@ export class WalletStorageService {
         }
 
         switch (entry.kind) {
-          case 'fixed-expense':
+          case TransactionKind.FixedExpense:
             return {
               ...entry,
               paidMonths: { ...entry.paidMonths, [month]: !entry.paidMonths[month] },
             };
-          case 'variable-expense':
+          case TransactionKind.VariableExpense:
             return { ...entry, paid: !entry.paid };
           default:
             return entry; // renda e cofrinho não têm status de pago
         }
       }),
     );
-  }
-
-  clearAll(): void {
-    this.save([]);
   }
 
   replaceAll(entries: WalletEntry[]): void {
@@ -166,11 +162,11 @@ export class WalletStorageService {
       return true;
     }
 
-    if (entryToRemove.kind === 'variable-expense' && entryToRemove.installment) {
+    if (entryToRemove.kind === TransactionKind.VariableExpense && entryToRemove.installment) {
       const removed = entryToRemove.installment;
 
       return (
-        entry.kind === 'variable-expense' &&
+        entry.kind === TransactionKind.VariableExpense &&
         entry.installment?.groupId === removed.groupId &&
         entry.installment.current >= removed.current
       );
@@ -218,7 +214,7 @@ export class WalletStorageService {
     const migratedEntries: WalletEntry[] = [
       ...legacyIncome.map((entry) => ({
         id: createId(),
-        kind: 'income' as const,
+        kind: TransactionKind.Income,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
         month: String(entry['mes'] ?? currentMonth),
@@ -226,7 +222,7 @@ export class WalletStorageService {
       })),
       ...legacyFixedExpenses.map((entry) => ({
         id: createId(),
-        kind: 'fixed-expense' as const,
+        kind: TransactionKind.FixedExpense,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
         month: currentMonth,
@@ -239,7 +235,7 @@ export class WalletStorageService {
 
         return {
           id: createId(),
-          kind: 'variable-expense' as const,
+          kind: TransactionKind.VariableExpense,
           description,
           value: Number(entry['valor'] ?? 0),
           month: String(entry['mes'] ?? currentMonth),

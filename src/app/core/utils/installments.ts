@@ -1,6 +1,6 @@
 import { NewEntryData, sumValues } from './entry.utils';
 import { addMonths, MonthKey } from './month.utils';
-import { VariableExpenseEntry, WalletEntry } from '../models/wallet.models';
+import { TransactionKind, VariableExpenseEntry, WalletEntry } from '../models/wallet.models';
 
 export function splitIntoInstallments(total: number, count: number): number[] {
   const totalCents = Math.round(total * 100);
@@ -26,7 +26,7 @@ export function buildInstallments(plan: InstallmentPlan): NewEntryData[] {
   const isInstallment = plan.count > 1;
 
   return values.map((value, index) => ({
-    kind: 'variable-expense',
+    kind: TransactionKind.VariableExpense,
     description: isInstallment
       ? `${plan.description} Parc.:${index + 1}/${plan.count}`
       : plan.description,
@@ -45,8 +45,8 @@ export function stripInstallmentSuffix(description: string): string {
 export function remainingAfterInstallment(entries: readonly WalletEntry[]): Map<string, number> {
   const groups = new Map<string, VariableExpenseEntry[]>();
 
-  for (const entry of entries){
-    if (entry.kind === 'variable-expense' && entry.installment) {
+  for (const entry of entries) {
+    if (entry.kind === TransactionKind.VariableExpense && entry.installment) {
       const group = groups.get(entry.installment.groupId) ?? [];
       group.push(entry);
       groups.set(entry.installment.groupId, group);
@@ -56,9 +56,10 @@ export function remainingAfterInstallment(entries: readonly WalletEntry[]): Map<
   const remaining = new Map<string, number>();
 
   for (const group of groups.values()) {
-    for (const entry of group){
+    for (const entry of group) {
       const later = group.filter(
-        (other) => other.installment!.current > entry.installment!.current);
+        (other) => other.installment!.current > entry.installment!.current,
+      );
       remaining.set(entry.id, sumValues(later));
     }
   }

@@ -2,7 +2,7 @@ import { InstallmentInfo, TransactionKind, WalletEntry } from '../models/wallet.
 import { getCurrentMonth } from './month.utils';
 import { createId } from '../../id-generator';
 
-const TRANSACTION_KINDS = ['income', 'saving', 'fixed-expense', 'variable-expense'];
+const TRANSACTION_KIND: readonly string[] = Object.values(TransactionKind);
 
 type RawRecord = Record<string, unknown>;
 
@@ -11,7 +11,7 @@ export function isRecord(value: unknown): value is RawRecord {
 }
 
 function isTransactionKind(value: unknown): value is TransactionKind {
-  return TRANSACTION_KINDS.includes(value as TransactionKind);
+  return typeof value === 'string' && TRANSACTION_KIND.includes(value);
 }
 
 function optionalString(value: unknown): string | undefined {
@@ -49,14 +49,14 @@ export function parseWalletEntry(raw: unknown): WalletEntry {
     createdAt: optionalString(raw['createdAt']) ?? new Date().toISOString(),
   };
 
-  const kind = isTransactionKind(raw['kind']) ? raw['kind'] : 'variable-expense';
+  const kind = isTransactionKind(raw['kind']) ? raw['kind'] : TransactionKind.VariableExpense;
 
   switch (kind) {
-    case 'income':
+    case TransactionKind.Income:
       return { ...base, kind };
-    case 'saving':
+    case TransactionKind.Saving:
       return { ...base, kind };
-    case 'fixed-expense':
+    case TransactionKind.FixedExpense:
       return {
         ...base,
         kind,
@@ -67,7 +67,7 @@ export function parseWalletEntry(raw: unknown): WalletEntry {
             : {},
         deletedFromMonth: optionalString(raw['deletedFromMonth']),
       };
-    case 'variable-expense':
+    case TransactionKind.VariableExpense:
       return {
         ...base,
         kind,

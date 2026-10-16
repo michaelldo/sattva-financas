@@ -193,10 +193,6 @@ form > button {
   width: 100%;
 }
 
-.saving-card .entry-list li {
-  border-top-color: rgb(244 244 244 / 12%);
-}
-
 .lower-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
@@ -397,9 +393,10 @@ dd {
   background: #ffffff;
   color: #141d23;
   padding: 16px;
-  font: 0.95rem/1.55 Consolas,
-  'Courier New',
-  monospace;
+  font:
+    0.95rem/1.55 Consolas,
+    'Courier New',
+    monospace;
 }
 
 .print-report {
@@ -508,7 +505,7 @@ dd {
   .month-filter,
   .entry-grid,
   .lower-grid,
-  .menu-button{
+  .menu-button {
     display: none !important;
   }
 
@@ -521,8 +518,9 @@ dd {
     display: block;
     color: #000000;
     white-space: pre-wrap;
-    font: 12pt/1.45 Consolas,
-    'Courier New',
-    monospace;
+    font:
+      12pt/1.45 Consolas,
+      'Courier New',
+      monospace;
   }
 }

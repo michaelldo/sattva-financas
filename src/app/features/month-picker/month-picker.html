@@ -23,7 +23,8 @@
           type="button"
           [class.is-selected]="option.value === month()"
           [attr.aria-pressed]="option.value === month()"
-          (click)="select(option.value)">
+          (click)="select(option.value)"
+        >
           {{ option.label }}
         </button>
       }
