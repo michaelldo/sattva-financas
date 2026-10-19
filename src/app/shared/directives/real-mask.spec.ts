@@ -14,6 +14,12 @@ describe('formatReal / parseReal', () => {
     expect(parseReal('1.234,50')).toBe(1234.5);
     expect(parseReal('abc')).toBeNull();
   });
+
+  it('limita a 11 dígitos (R$ 999.999.999,99)', () => {
+    expect(parseReal('99999999999')).toBe(999999999.99);
+    expect(parseReal('999999999999999999999')).toBe(999999999.99);
+    expect(parseReal('000000000000123')).toBe(1.23);
+  });
 });
 
 @Component({

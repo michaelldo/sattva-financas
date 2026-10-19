@@ -25,7 +25,13 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.css"]
+            "styles": [
+              "@fontsource/poppins/latin-400.css",
+              "@fontsource/poppins/latin-600.css",
+              "@fontsource/poppins/latin-700.css",
+              "@fontsource/poppins/latin-800.css",
+              "src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -42,7 +48,15 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,
