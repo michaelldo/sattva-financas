@@ -342,8 +342,15 @@ describe('App', () => {
     expect(app.reportText()).toContain('Relatório - janeiro de 2026 a março de 2026');
     expect(app.reportText()).toContain('Total do período');
 
-    app.reportFrom.set('2026-04');
-    expect(app.reportRangeError()).toBe('O mês inicial deve ser antes do mês final.');
+    app.setReportFrom('2026-05');
+    expect(app.reportTo()).toBe('2026-05');
+
+    app.setReportTo('2026-02');
+    expect(app.reportFrom()).toBe('2026-02');
+
+    app.setReportFrom('2020-01');
+    app.setReportTo('2026-02');
+    expect(app.reportRangeError()).toBe('Escolha um período de até 36 meses.');
     expect(app.reportText()).toBe('');
   });
 
@@ -466,5 +473,41 @@ describe('App', () => {
     expect(TestBed.inject(ToastService).toasts().at(-1)?.message).toBe('Backup salvo no Drive.');
 
     vi.unstubAllGlobals();
+  });
+
+  it('não aceita descrição só com espaços e salva sem espaços sobrando', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.incomeForm.setValue({ description: '   ', value: 100 });
+    app.addIncome();
+    expect(app.entries()).toHaveLength(0);
+
+    app.incomeForm.setValue({ description: '  Pix  ', value: 100 });
+    app.addIncome();
+    expect(app.entries()[0].description).toBe('Pix');
+  });
+
+  it('importar backup pode ser desfeito pelo aviso', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const toasts = TestBed.inject(ToastService);
+
+    app.incomeForm.setValue({ description: 'Salário', value: 2500 });
+    app.addIncome();
+
+    const file = new File(
+      [
+        JSON.stringify({
+          entries: [{ kind: 'income', description: 'Outro', value: 1, month: '2026-10' }],
+        }),
+      ],
+      'backup.json',
+    );
+    await app.importBackup({ target: { files: [file], value: '' } } as unknown as Event);
+    expect(app.entries().map((entry) => entry.description)).toEqual(['Outro']);
+
+    toasts.toasts().at(-1)!.action!.run();
+    expect(app.entries().map((entry) => entry.description)).toEqual(['Salário']);
   });
 });

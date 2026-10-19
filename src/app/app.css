@@ -422,9 +422,9 @@ dd {
   cursor: not-allowed;
 }
 
-.report-error {
-  margin: 16px 18px 18px;
+.report-text.report-error {
   color: #b3261e;
+  font-family: inherit;
   font-weight: 600;
 }
 

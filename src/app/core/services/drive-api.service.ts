@@ -22,6 +22,7 @@ export class DriveApiService {
           spaces: 'appDataFolder',
           q: `name = '${BACKUP_FILE_NAME}'`,
           fields: 'files(id, modifiedTime)',
+          orderBy: 'modifiedTime desc',
         },
       }),
     );

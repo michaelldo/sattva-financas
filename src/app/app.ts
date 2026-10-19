@@ -1,9 +1,10 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { getCurrentMonth, monthRange } from './core/utils/month.utils';
+import { getCurrentMonth, MonthKey, monthRange } from './core/utils/month.utils';
+import { MAX_DESCRIPTION_LENGTH } from './core/utils/entry-parser';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import {
@@ -38,6 +39,19 @@ const SYNC_MESSAGES: Record<SyncAction, string> = {
   none: 'Tudo sincronizado.',
 };
 const MAX_REPORT_MONTHS = 36;
+const MAX_INSTALLMENTS = 120;
+
+const DESCRIPTION_VALIDATORS = [
+  Validators.required,
+  Validators.pattern(/\S/),
+  Validators.maxLength(MAX_DESCRIPTION_LENGTH),
+];
+const VALUE_VALIDATORS = [Validators.required, Validators.min(0.01)];
+const INSTALLMENTS_VALIDATORS = [
+  Validators.required,
+  Validators.min(1),
+  Validators.max(MAX_INSTALLMENTS),
+];
 
 @Component({
   selector: 'app-root',
@@ -64,6 +78,8 @@ export class App {
   protected readonly googleAuth = inject(GoogleAuthService);
   protected readonly Kind = TransactionKind;
   protected readonly driveSync = inject(DriveSyncService);
+  protected readonly maxInstallments = MAX_INSTALLMENTS;
+  protected readonly maxDescriptionLength = MAX_DESCRIPTION_LENGTH;
 
   readonly appVersion = version;
   readonly currentMonth = signal(getCurrentMonth());
@@ -72,10 +88,10 @@ export class App {
   readonly menuOpen = signal(false);
   readonly editingEntry = signal<WalletEntry | null>(null);
 
-  readonly editForm = this.formBuilder.group({
-    description: ['', Validators.required],
-    value: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    installments: [1, [Validators.required, Validators.min(1)]],
+  readonly editForm = this.formBuilder.nonNullable.group({
+    description: ['', DESCRIPTION_VALIDATORS],
+    value: [null as number | null, VALUE_VALIDATORS],
+    installments: [1, INSTALLMENTS_VALIDATORS],
   });
   readonly editingInstallment = computed(() => {
     const entry = this.editingEntry();
@@ -86,11 +102,11 @@ export class App {
   readonly entries = this.walletStorage.entries;
   readonly incomeForm = this.createMoneyForm();
   readonly fixedExpenseForm = this.createMoneyForm();
-  readonly variableExpenseForm = this.formBuilder.group({
-    description: ['', Validators.required],
-    value: [null as number | null, [Validators.required, Validators.min(0.01)]],
+  readonly variableExpenseForm = this.formBuilder.nonNullable.group({
+    description: ['', DESCRIPTION_VALIDATORS],
+    value: [null as number | null, VALUE_VALIDATORS],
     isInstallment: [false],
-    installments: [1, [Validators.required, Validators.min(1)]],
+    installments: [1, INSTALLMENTS_VALIDATORS],
   });
   readonly savingForm = this.createMoneyForm();
   readonly selectedMonthEntries = computed(() =>
@@ -116,10 +132,6 @@ export class App {
     const from = this.reportFrom();
     const to = this.reportTo();
 
-    if (from > to) {
-      return 'O mês inicial deve ser antes do mês final.';
-    }
-
     if (monthRange(from, to).length > MAX_REPORT_MONTHS) {
       return `Escolha um período de até ${MAX_REPORT_MONTHS} meses.`;
     }
@@ -139,15 +151,20 @@ export class App {
   });
 
   constructor() {
-    const swUpdate = this.swUpdate;
+    effect(() => {
+      if (this.walletStorage.saveFailed()) {
+        this.toast.error('Não foi possível salvar: armazenamento cheio ou bloqueado');
+      }
+    });
 
-    if (!swUpdate?.isEnabled) {
-      return;
-    }
-
-    swUpdate.versionUpdates
+    this.swUpdate?.versionUpdates
       .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))
-      .subscribe(() => window.location.reload());
+      .subscribe(() =>
+        this.toast.show('Nova versão disponível.', {
+          duration: null,
+          action: { label: 'Atualizar', run: () => document.location.reload() },
+        }),
+      );
   }
 
   addIncome(): void {
@@ -167,11 +184,11 @@ export class App {
     const { description, value } = this.savingForm.getRawValue();
     this.walletStorage.addOrUpdateSaving({
       kind: TransactionKind.Saving,
-      description: description ?? '',
+      description: description.trim(),
       value: Number(value),
       month: this.currentMonth(),
     });
-    this.savingForm.reset({ description: '', value: null });
+    this.savingForm.reset();
   }
 
   addVariableExpense(): void {
@@ -184,21 +201,15 @@ export class App {
       this.variableExpenseForm.getRawValue();
 
     const entries = buildInstallments({
-      description: description ?? '',
-      total: value ?? 0,
-      count: isInstallment ? installments || 1 : 1,
+      description: description.trim(),
+      total: Number(value),
+      count: isInstallment ? installments : 1,
       startMonth: this.currentMonth(),
       groupId: createId(),
     });
 
     this.walletStorage.addMany(entries);
-
-    this.variableExpenseForm.reset({
-      description: '',
-      value: null,
-      isInstallment: false,
-      installments: 1,
-    });
+    this.variableExpenseForm.reset();
   }
 
   removeEntry(id: string): void {
@@ -251,7 +262,7 @@ export class App {
     }
 
     const raw = this.editForm.getRawValue();
-    const description = (raw.description ?? '').trim();
+    const description = raw.description.trim();
     const value = Number(raw.value);
 
     if (entry.kind === TransactionKind.VariableExpense && entry.installment) {
@@ -294,9 +305,15 @@ export class App {
 
     try {
       const entries = await this.backup.readFile(file);
+      const previous = this.entries();
+
       this.walletStorage.replaceAll(entries);
       this.menuOpen.set(false);
-      this.toast.success('Backup importado com sucesso!');
+      this.toast.show('Backup importado com sucesso!', {
+        kind: 'success',
+        duration: 8000,
+        action: { label: 'Desfazer', run: () => this.walletStorage.replaceAll(previous) },
+      });
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Erro desconhecido';
       this.toast.error(`Não foi possível importar este arquivo. ${reason}`);
@@ -310,12 +327,26 @@ export class App {
       await navigator.clipboard.writeText(this.reportText());
       this.toast.success('Relatório copiado!');
     } catch {
-      this.toast.error(`Não foi possível copiar o relatório.`);
+      this.toast.error('Não foi possível copiar o relatório.');
     }
   }
 
   printReport(): void {
     window.print();
+  }
+
+  setReportFrom(month: MonthKey): void {
+    this.reportFrom.set(month);
+    if (month > this.reportTo()) {
+      this.reportTo.set(month);
+    }
+  }
+
+  setReportTo(month: MonthKey): void {
+    this.reportTo.set(month);
+    if (month < this.reportFrom()) {
+      this.reportFrom.set(month);
+    }
   }
 
   openFromMenu(modal: 'report' | 'help'): void {
@@ -354,10 +385,10 @@ export class App {
   disconnectDrive(): void {
     this.googleAuth.disconnect();
     this.driveSync.reset();
-    this.toast.show('Google drive desconectado.');
+    this.toast.show('Google Drive desconectado.');
   }
 
-  private addSimpleEntry(kind: TransactionKind, form: FormGroup): void {
+  private addSimpleEntry(kind: TransactionKind, form: MoneyForm): void {
     if (form.invalid) {
       form.markAllAsTouched();
       return;
@@ -366,17 +397,20 @@ export class App {
     const { description, value } = form.getRawValue();
     this.walletStorage.add({
       kind,
-      description,
+      description: description.trim(),
       value: Number(value),
       month: this.currentMonth(),
     });
-    form.reset({ description: '', value: null });
+    form.reset();
   }
 
   private createMoneyForm() {
-    return this.formBuilder.group({
-      description: ['', Validators.required],
-      value: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    return this.formBuilder.nonNullable.group({
+      description: ['', DESCRIPTION_VALIDATORS],
+      value: [null as number | null, VALUE_VALIDATORS],
     });
   }
 }
+
+/** O tipo é inferido no método, se o formulário mudar, o tipo acompanha */
+type MoneyForm = ReturnType<App['createMoneyForm']>;
