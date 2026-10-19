@@ -5,6 +5,7 @@ import {
   InstallmentInfo,
   TransactionKind,
   WalletEntry,
+  WalletSummary,
 } from '../models/wallet.models';
 
 export interface NewEntryData {
@@ -88,4 +89,27 @@ export function sumUnpaid(entries: readonly WalletEntry[], month: MonthKey): num
 
 export function assertNever(valeu: never): never {
   throw new Error(`Tipo de lançamento não tratado: ${String(valeu)}`);
+}
+
+export function isEntryVisibleInMonth(entry: WalletEntry, month: MonthKey): boolean {
+  if (entry.kind !== TransactionKind.FixedExpense){
+    return entry.month === month;
+  }
+
+  return entry.month <= month && (!entry.deletedFromMonth || month < entry.deletedFromMonth);
+}
+
+export function summarize(groups: EntriesByKind): WalletSummary {
+  const income = sumValues(groups[TransactionKind.Income]);
+  const fixedExpenses = sumValues(groups[TransactionKind.FixedExpense]);
+  const variableExpenses = sumValues(groups[TransactionKind.VariableExpense]);
+  const savings = sumValues(groups[TransactionKind.Saving]);
+
+  return {
+    income,
+    fixedExpenses,
+    variableExpenses,
+    savings,
+    balance: income - fixedExpenses - variableExpenses - savings,
+  };
 }

@@ -1,12 +1,13 @@
-import { Injectable } from '@angular/core';
+import { formatMonthLabel, MonthKey, monthRange } from '../utils/month.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from '../models/wallet.models';
-import { formatMonthLabel, MonthKey } from '../utils/month.utils';
+import { Injectable } from '@angular/core';
+import { groupByKind, isEntryVisibleInMonth, summarize, sumValues } from '../utils/entry.utils';
+import { renderTree, TreeNode } from '../utils/tree.utils';
 
 export interface ReportInput {
-  month: MonthKey;
-  summary: WalletSummary;
-  fixedEntries: WalletEntry[];
-  allEntries: WalletEntry[];
+  from: MonthKey;
+  to: MonthKey;
+  entries: readonly WalletEntry[];
 }
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -17,79 +18,65 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 
 @Injectable({ providedIn: 'root' })
 export class ReportService {
-  build({ month, summary, fixedEntries, allEntries }: ReportInput): string {
-    const variableMonths = this.groupByMonth(
-      this.sortedByKind(allEntries, TransactionKind.VariableExpense),
-    );
-    const savingMonths = this.groupByMonth(this.sortedByKind(allEntries, TransactionKind.Saving));
+  build({ from, to, entries }: ReportInput): string {
+    const months = monthRange(from, to);
+    const summaries: WalletSummary[] = [];
 
-    const lines = [
-      `Resumo - ${formatMonthLabel(month)}`,
-      '├── Saldo',
-      `|   └── ${this.formatCurrency(summary.balance)}`,
-      '|',
-      '├── Entradas',
-      `|   └── ${this.formatCurrency(summary.income)}`,
-      '|',
-      '├── Gasto Fixo',
-      `|   ├── Total: ${this.formatCurrency(summary.fixedExpenses)}`,
-      ...this.formatEntryLines(fixedEntries, '|   '),
-      '|',
-      '├── Gasto variavel',
-      ...this.formatMonthGroups(variableMonths, '|   '),
-      '|',
-      '└── Cofrinho',
-      ...this.formatMonthGroups(savingMonths, '    '),
-    ];
+    const monthNodes = months.map((month): TreeNode => {
+      const groups = groupByKind(
+        entries
+          .filter((entry) => isEntryVisibleInMonth(entry, month))
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      );
 
-    return lines.join('\n');
-  }
+      const summary = summarize(groups);
+      summaries.push(summary);
 
-  private sortedByKind(entries: WalletEntry[], kind: WalletEntry['kind']): WalletEntry[] {
-    return entries
-      .filter((entry) => entry.kind === kind)
-      .sort((a, b) => a.month.localeCompare(b.month) || a.createdAt.localeCompare(b.createdAt));
-  }
-
-  private formatMonthGroups(groups: Map<string, WalletEntry[]>, prefix: string): string[] {
-    if (groups.size === 0) {
-      return [`${prefix}└── Nenhum Lançamento`];
-    }
-
-    return Array.from(groups.entries()).flatMap(([month, entries], monthIndex, allMonths) => {
-      const isLastMonth = monthIndex === allMonths.length - 1;
-      const monthBranch = isLastMonth ? '└──' : '├──';
-      const childPrefix = `${prefix}${isLastMonth ? '    ' : '|   '}`;
-      const total = entries.reduce((sum, entry) => sum + entry.value, 0);
-
-      return [
-        `${prefix}${monthBranch} ${formatMonthLabel(month)}`,
-        `${childPrefix}├── Total: ${this.formatCurrency(total)}`,
-        ...this.formatEntryLines(entries, childPrefix),
-      ];
+      return {
+        label: formatMonthLabel(month),
+        children: [
+          this.kindNode('Entradas', groups[TransactionKind.Income]),
+          this.kindNode('Gasto fixo', groups[TransactionKind.FixedExpense]),
+          this.kindNode('Gasto variável', groups[TransactionKind.VariableExpense]),
+          this.kindNode('Cofrinho', groups[TransactionKind.Saving]),
+          { label: `Saldo: ${this.formatCurrency(summary.balance)}` },
+        ],
+      };
     });
+
+    const isSingleMonth = months.length === 1;
+    const title = isSingleMonth
+      ? `Relatório - ${formatMonthLabel(from)}`
+      : `Relatório - ${formatMonthLabel(from)} a ${formatMonthLabel(to)}`;
+
+    const nodes = isSingleMonth ? monthNodes : [...monthNodes, this.totalNode(summaries)];
+
+    return [title, ...renderTree(nodes)].join('\n');
   }
 
-  private formatEntryLines(entries: WalletEntry[], prefix: string): string[] {
-    if (entries.length === 0) {
-      return [`${prefix}└── Nenhum Lançamento`];
-    }
-
-    return entries.map((entry, index) => {
-      const branch = index === entries.length - 1 ? '└──' : '├──';
-      return `${prefix}${branch} ${entry.description}: ${this.formatCurrency(entry.value)}`;
-    });
+  private kindNode(title: string, entries: readonly WalletEntry[]): TreeNode {
+    return {
+      label: `${title}: ${this.formatCurrency(sumValues(entries))}`,
+      children: entries.map((entry) => ({
+        label: `${entry.description}: ${this.formatCurrency(entry.value)}`,
+      })),
+    };
   }
 
-  private groupByMonth(entries: WalletEntry[]): Map<string, WalletEntry[]> {
-    const groups = new Map<string, WalletEntry[]>();
+  private totalNode(summaries: readonly WalletSummary[]): TreeNode {
+    const total = (field: keyof WalletSummary) =>
+      this.formatCurrency(summaries.reduce((sum, summary) => sum + summary[field], 0));
 
-    for (const entry of entries) {
-      const list = groups.get(entry.month) ?? [];
-      list.push(entry);
-      groups.set(entry.month, list);
-    }
-    return groups;
+    return {
+      label: 'Total do período',
+      children: [
+        { label: `Entradas: ${total('income')}` },
+        { label: `Gasto fixo: ${total('fixedExpenses')}` },
+        { label: `Gasto variável: ${total('variableExpenses')}` },
+        { label: `Cofrinho: ${total('savings')}` },
+        { label: `Saldo: ${total('balance')}` },
+      ],
+    };
   }
 
   private formatCurrency(value: number): string {

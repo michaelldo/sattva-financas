@@ -129,7 +129,7 @@ form input:focus {
 .entry-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 92px;
+  gap: clamp(28px, 5vw, 92px);
   margin-bottom: 72px;
   align-items: start;
 }
@@ -166,9 +166,10 @@ form label.check-row input {
 }
 
 .form-actions {
-  display: grid;
-  grid-template-columns: 1fr minmax(130px, 190px);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   margin-top: auto;
 }
@@ -190,7 +191,8 @@ form > button {
 }
 
 .form-actions button {
-  width: 100%;
+  flex: 1 1 130px;
+  width: auto;
 }
 
 .lower-grid {
@@ -386,11 +388,50 @@ dd {
   padding-left: 22px;
 }
 
+.report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 0;
+}
+
+.report-range {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.report-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  --month-picker-width: 180px;
+}
+
 .report-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 10px;
-  padding: 16px 18px 0;
+}
+
+.report-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.report-error {
+  margin: 16px 18px 18px;
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.menu-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
 }
 
 .report-text {
@@ -403,10 +444,9 @@ dd {
   background: #ffffff;
   color: #141d23;
   padding: 16px;
-  font:
-    0.95rem/1.55 Consolas,
-    'Courier New',
-    monospace;
+  font: 0.95rem/1.55 Consolas,
+  'Courier New',
+  monospace;
 }
 
 .print-report {
@@ -528,9 +568,8 @@ dd {
     display: block;
     color: #000000;
     white-space: pre-wrap;
-    font:
-      12pt/1.45 Consolas,
-      'Courier New',
-      monospace;
+    font: 12pt/1.45 Consolas,
+    'Courier New',
+    monospace;
   }
 }

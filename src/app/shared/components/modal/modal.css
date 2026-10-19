@@ -27,9 +27,7 @@ dialog.drawer {
 }
 
 dialog.drawer[open] {
-  animation:
-    slide-in 0,
-    2s ease-out;
+  animation: slide-in 0.2s ease-out;
 }
 
 dialog.drawer .surface {

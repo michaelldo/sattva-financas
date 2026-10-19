@@ -5,12 +5,12 @@
   [attr.aria-expanded]="isOpen()"
   aria-haspopup="true"
 >
-  {{ label() }}
+  <span class="month-label">{{ label() }}</span>
   <span class="chevron" [class.open]="isOpen()">⌄</span>
 </button>
 
 @if (isOpen()) {
-  <div class="month-panel">
+  <div class="month-panel" [class.month-panel--start]="align() === 'start'">
     <div class="month-panel__header">
       <button type="button" (click)="changeYear(-1)" aria-label="Ano anterior">&lt;</button>
       <strong>{{ viewedYear() }}</strong>

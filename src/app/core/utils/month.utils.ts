@@ -25,3 +25,11 @@ export function formatMonthLabel(month: MonthKey): string {
     monthKeyToDate(month),
   );
 }
+
+export function monthRange(from: MonthKey, to: MonthKey): MonthKey[] {
+  const months: MonthKey[] = [];
+  for (let month = from; month <= to; month = addMonths(month, 1)) {
+    months.push(month);
+  }
+  return months;
+}

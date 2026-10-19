@@ -328,6 +328,47 @@ describe('App', () => {
     expect(app.reportOpen()).toBe(true);
   });
 
+  it('o relatório abre no mês da tela e aceita um período', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    app.currentMonth.set('2026-03');
+    app.openFromMenu('report');
+    expect(app.reportText()).toContain('Relatório - março de 2026');
+
+    app.reportFrom.set('2026-01');
+    app.reportTo.set('2026-03');
+    expect(app.reportText()).toContain('Relatório - janeiro de 2026 a março de 2026');
+    expect(app.reportText()).toContain('Total do período');
+
+    app.reportFrom.set('2026-04');
+    expect(app.reportRangeError()).toBe('O mês inicial deve ser antes do mês final.');
+    expect(app.reportText()).toBe('');
+  });
+
+  it('escolhe o período do relatório pelos seletores de mês', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const element: HTMLElement = fixture.nativeElement;
+    app.currentMonth.set('2026-03');
+    app.openFromMenu('report');
+    await fixture.whenStable();
+
+    const [fromPicker] = element.querySelectorAll<HTMLElement>('.report-range app-month-picker');
+    fromPicker.querySelector<HTMLButtonElement>('.month-trigger')!.click();
+    await fixture.whenStable();
+
+    const january = Array.from(
+      fromPicker.querySelectorAll<HTMLButtonElement>('.month-grid button'),
+    ).find((button) => button.textContent?.trim() === 'janeiro')!;
+    january.click();
+    await fixture.whenStable();
+
+    expect(app.reportFrom()).toBe('2026-01');
+    expect(app.reportText()).toContain('Relatório - janeiro de 2026 a março de 2026');
+  });
+
   it('mostra quanto falta pagar no mês', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

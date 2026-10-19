@@ -4,6 +4,7 @@ import {
   computed,
   ElementRef,
   inject,
+  input,
   linkedSignal,
   model,
   signal,
@@ -36,6 +37,7 @@ export class MonthPicker {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly month = model.required<MonthKey>();
+  readonly align = input<'center' | 'start'>('center');
   readonly isOpen = signal(false);
   readonly viewedYear = linkedSignal(() => monthKeyToDate(this.month()).getFullYear());
   readonly label = computed(() => formatMonthLabel(this.month()));

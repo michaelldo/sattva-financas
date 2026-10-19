@@ -3,7 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { getCurrentMonth } from './core/utils/month.utils';
+import { getCurrentMonth, monthRange } from './core/utils/month.utils';
 import { BackupService } from './core/services/backup.service';
 import { ReportService } from './core/services/report.service';
 import {
@@ -11,7 +11,13 @@ import {
   remainingAfterInstallment,
   stripInstallmentSuffix,
 } from './core/utils/installments';
-import { groupByKind, sumUnpaid, sumValues } from './core/utils/entry.utils';
+import {
+  groupByKind,
+  isEntryVisibleInMonth,
+  summarize,
+  sumUnpaid,
+  sumValues,
+} from './core/utils/entry.utils';
 import { TransactionKind, WalletEntry, WalletSummary } from './core/models/wallet.models';
 import { WalletStorageService } from './core/services/wallet-storage.service';
 import { RealMask } from './shared/directives/real-mask';
@@ -31,6 +37,7 @@ const SYNC_MESSAGES: Record<SyncAction, string> = {
   upload: 'Backup salvo no Drive.',
   none: 'Tudo sincronizado.',
 };
+const MAX_REPORT_MONTHS = 36;
 
 @Component({
   selector: 'app-root',
@@ -88,7 +95,7 @@ export class App {
   readonly savingForm = this.createMoneyForm();
   readonly selectedMonthEntries = computed(() =>
     this.entries()
-      .filter((entry) => this.isEntryVisibleInCurrentMonth(entry))
+      .filter((entry) => isEntryVisibleInMonth(entry, this.currentMonth()))
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   );
   readonly entriesByKind = computed(() => groupByKind(this.selectedMonthEntries()));
@@ -101,28 +108,35 @@ export class App {
       this.currentMonth(),
     );
   });
-  readonly summary = computed<WalletSummary>(() => {
-    const groups = this.entriesByKind();
-    const income = sumValues(groups.income);
-    const fixedExpenses = sumValues(groups[TransactionKind.FixedExpense]);
-    const variableExpenses = sumValues(groups[TransactionKind.VariableExpense]);
-    const savings = sumValues(groups.saving);
-    return {
-      income,
-      fixedExpenses,
-      variableExpenses,
-      savings,
-      balance: income - fixedExpenses - variableExpenses - savings,
-    };
+  readonly summary = computed<WalletSummary>(() => summarize(this.entriesByKind()));
+  readonly reportFrom = signal(getCurrentMonth());
+  readonly reportTo = signal(getCurrentMonth());
+
+  readonly reportRangeError = computed(() => {
+    const from = this.reportFrom();
+    const to = this.reportTo();
+
+    if (from > to) {
+      return 'O mês inicial deve ser antes do mês final.';
+    }
+
+    if (monthRange(from, to).length > MAX_REPORT_MONTHS) {
+      return `Escolha um período de até ${MAX_REPORT_MONTHS} meses.`;
+    }
+    return null;
   });
-  readonly reportText = computed(() =>
-    this.report.build({
-      month: this.currentMonth(),
-      summary: this.summary(),
-      fixedEntries: this.entriesByKind()[TransactionKind.FixedExpense],
-      allEntries: this.entries(),
-    }),
-  );
+
+  readonly reportText = computed(() => {
+    if (this.reportRangeError()) {
+      return '';
+    }
+
+    return this.report.build({
+      from: this.reportFrom(),
+      to: this.reportTo(),
+      entries: this.entries(),
+    })
+  });
 
   constructor() {
     const swUpdate = this.swUpdate;
@@ -306,7 +320,14 @@ export class App {
 
   openFromMenu(modal: 'report' | 'help'): void {
     this.menuOpen.set(false);
-    (modal === 'report' ? this.reportOpen : this.backupHelpOpen).set(true);
+
+    if (modal === 'report') {
+      this.reportFrom.set(this.currentMonth());
+      this.reportTo.set(this.currentMonth());
+      this.reportOpen.set(true);
+    } else {
+      this.backupHelpOpen.set(true);
+    }
   }
 
   async connectDrive(): Promise<void> {
@@ -357,16 +378,5 @@ export class App {
       description: ['', Validators.required],
       value: [null as number | null, [Validators.required, Validators.min(0.01)]],
     });
-  }
-
-  private isEntryVisibleInCurrentMonth(entry: WalletEntry): boolean {
-    if (entry.kind !== TransactionKind.FixedExpense) {
-      return entry.month === this.currentMonth();
-    }
-
-    return (
-      entry.month <= this.currentMonth() &&
-      (!entry.deletedFromMonth || this.currentMonth() < entry.deletedFromMonth)
-    );
   }
 }
