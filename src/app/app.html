@@ -37,12 +37,12 @@
           Saidas
         </span>
         <strong>{{
-            summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
-          }}</strong>
+          summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
+        }}</strong>
         @if (summary().fixedExpenses + summary().variableExpenses > 0) {
           @if (amountToPay() > 0) {
             <small class="metric__hint is-pending"
-            >Falta pagar: {{ amountToPay() | currency }}</small
+              >Falta pagar: {{ amountToPay() | currency }}</small
             >
           } @else {
             <small class="metric__hint is-done">Tudo pago ✓</small>
@@ -79,7 +79,7 @@
     >
       <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
         <label
-        >Descrição:
+          >Descrição:
           <input type="text" formControlName="description" placeholder="Mercado" />
         </label>
         <label>
@@ -303,7 +303,7 @@
     </div>
 
     @if (reportRangeError(); as error) {
-      <p class="report-error" role="alert"> {{ error }}</p>
+      <p class="report-error" role="alert">{{ error }}</p>
     } @else {
       <textarea class="report-text" readonly [value]="reportText()"></textarea>
     }

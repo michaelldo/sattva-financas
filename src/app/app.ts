@@ -29,7 +29,7 @@ import { version } from '../../package.json';
 import { ToastContainer } from './shared/components/toast-container/toast-container';
 import { ToastService } from './core/services/toast.service';
 import { GoogleAuthService } from './core/services/google-auth.service';
-import { SyncAction } from './core/services/sync.utils';
+import { SyncAction } from './core/utils/sync.utils';
 import { DriveSyncService } from './core/services/drive-sync.service';
 
 const SYNC_MESSAGES: Record<SyncAction, string> = {
@@ -135,7 +135,7 @@ export class App {
       from: this.reportFrom(),
       to: this.reportTo(),
       entries: this.entries(),
-    })
+    });
   });
 
   constructor() {

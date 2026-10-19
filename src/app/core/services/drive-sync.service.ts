@@ -3,7 +3,7 @@ import { DriveApiService } from './drive-api.service';
 import { GoogleAuthService } from './google-auth.service';
 import { BackupService } from './backup.service';
 import { WalletStorageService } from './wallet-storage.service';
-import { decideSync, SyncAction } from './sync.utils';
+import { decideSync, SyncAction } from '../utils/sync.utils';
 
 export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'paused' | 'error';
 /** Espera após a última alteração antes do envio (envio em lote das alterações) */

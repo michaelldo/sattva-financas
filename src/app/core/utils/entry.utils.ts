@@ -92,7 +92,7 @@ export function assertNever(valeu: never): never {
 }
 
 export function isEntryVisibleInMonth(entry: WalletEntry, month: MonthKey): boolean {
-  if (entry.kind !== TransactionKind.FixedExpense){
+  if (entry.kind !== TransactionKind.FixedExpense) {
     return entry.month === month;
   }
 

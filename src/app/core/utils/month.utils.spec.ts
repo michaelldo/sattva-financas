@@ -17,5 +17,4 @@ describe('month.utils', () => {
     expect(monthRange('2026-10', '2026-10')).toEqual(['2026-10']);
     expect(monthRange('2026-10', '2026-09')).toEqual([]);
   });
-
 });
