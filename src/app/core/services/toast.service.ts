@@ -17,7 +17,7 @@ export interface Toast {
 export interface ToastOptions {
   kind?: ToastKind;
   action?: ToastAction;
-  duration?: number;
+  duration?: number | null;
 }
 
 const DEFAULT_DURATION = 4000;
@@ -38,7 +38,10 @@ export class ToastService {
     };
 
     this.toastsSignal.update((toasts) => [...toasts, toast]);
-    setTimeout(() => this.dismiss(toast.id), options.duration ?? DEFAULT_DURATION);
+    const duration = options.duration === undefined ? DEFAULT_DURATION : options.duration;
+    if (duration !== null) {
+      setTimeout(() => this.dismiss(toast.id), duration);
+    }
 
     return toast.id;
   }

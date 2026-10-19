@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth } from '../utils/month.utils';
-import { isRecord, parseWalletEntry } from '../utils/entry-parser';
+import { isRecord, parseWalletEntry, withUniqueIds } from '../utils/entry-parser';
+
+const MAX_BACKUP_SIZE_BYTES = 5 * 1024 * 1024;
 
 @Injectable({ providedIn: 'root' })
 export class BackupService {
@@ -28,6 +30,9 @@ export class BackupService {
   }
 
   async readFile(file: File): Promise<WalletEntry[]> {
+    if (file.size > MAX_BACKUP_SIZE_BYTES) {
+      throw new Error('Arquivo grande demais para ser um backup do Sattva');
+    }
     return this.parse(await file.text());
   }
 
@@ -55,6 +60,6 @@ export class BackupService {
       }
     });
 
-    return { entries, exportedAt };
+    return { entries: withUniqueIds(entries), exportedAt };
   }
 }

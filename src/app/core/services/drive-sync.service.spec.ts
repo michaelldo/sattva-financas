@@ -111,4 +111,32 @@ describe('DriveSyncService', () => {
     await expect(sync.syncNow()).rejects.toThrow('offline');
     expect(sync.status()).toBe('error');
   });
+
+  it('alteração feita durante o envio também chega ao Drive', async () => {
+    storage.add({
+      kind: TransactionKind.Income,
+      description: 'Salário',
+      value: 2500,
+      month: '2026-10',
+    });
+
+    // deixa o primeiro envio "pendurado" até liberarmos
+    let finishCreate!: () => void;
+    const originalCreate = drive.create;
+    drive.create = (content: string) =>
+      new Promise<string>((resolve) => {
+        finishCreate = () => originalCreate(content).then(resolve);
+      });
+
+    const sync$ = sync.syncNow();
+    await vi.waitFor(() => expect(finishCreate).toBeDefined());
+
+    // o usuário lança outra coisa enquanto o envio acontece
+    storage.add({ kind: TransactionKind.Income, description: 'Pix', value: 50, month: '2026-10' });
+    finishCreate();
+    await sync$;
+
+    await vi.waitFor(() => expect(backup.parse(drive.file!.content)).toHaveLength(2));
+    expect(sync.status()).toBe('synced');
+  });
 });

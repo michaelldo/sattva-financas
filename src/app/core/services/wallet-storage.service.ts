@@ -1,9 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { TransactionKind, WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth } from '../utils/month.utils';
 import { createId } from '../../id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
-import { parseWalletEntry } from '../utils/entry-parser';
+import { parseWalletEntry, withUniqueIds } from '../utils/entry-parser';
 import {
   editFixedFromMonth,
   editInstallmentGroup,
@@ -19,9 +19,23 @@ const MODIFIED_AT_KEY = 'sattva-wallet-modified-at';
 export class WalletStorageService {
   private readonly entriesSignal = signal<WalletEntry[]>(this.readEntries());
   private readonly lastModifiedSignal = signal<string>(this.readModifiedAt());
+  private readonly saveFailedSignal = signal(false);
 
   readonly entries = this.entriesSignal.asReadonly();
   readonly lastModified = this.lastModifiedSignal.asReadonly();
+  readonly saveFailed = this.saveFailedSignal.asReadonly();
+
+  constructor() {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === STORAGE_KEY || event.key === MODIFIED_AT_KEY) {
+        this.entriesSignal.set(this.readEntries());
+        this.lastModifiedSignal.set(this.readModifiedAt());
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('storage', onStorage));
+  }
 
   add(data: NewEntryData): void {
     this.save([...this.entriesSignal(), createEntry(data)]);
@@ -135,8 +149,14 @@ export class WalletStorageService {
   private save(entries: WalletEntry[], modifiedAt = new Date().toISOString()): void {
     this.entriesSignal.set(entries);
     this.lastModifiedSignal.set(modifiedAt);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    localStorage.setItem(MODIFIED_AT_KEY, modifiedAt);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(MODIFIED_AT_KEY, modifiedAt);
+      this.saveFailedSignal.set(false);
+    } catch {
+      this.saveFailedSignal.set(true); //Caso retorne erro os dados ficam só na memória
+    }
   }
 
   private readModifiedAt(): string {
@@ -166,13 +186,15 @@ export class WalletStorageService {
       return [];
     }
 
-    return stored.flatMap((raw) => {
-      try {
-        return [parseWalletEntry(raw)];
-      } catch {
-        return [];
-      }
-    });
+    return withUniqueIds(
+      stored.flatMap((raw) => {
+        try {
+          return [parseWalletEntry(raw)];
+        } catch {
+          return [];
+        }
+      }),
+    );
   }
 
   private shouldRemoveEntry(entry: WalletEntry, entryToRemove: WalletEntry): boolean {

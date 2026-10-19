@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import {
   formatMonthLabel,
+  getCurrentMonth,
   MonthKey,
   monthKeyToDate,
   toMonthKey,
@@ -40,6 +41,7 @@ export class MonthPicker {
   readonly align = input<'center' | 'start'>('center');
   readonly isOpen = signal(false);
   readonly viewedYear = linkedSignal(() => monthKeyToDate(this.month()).getFullYear());
+  protected readonly today = getCurrentMonth();
   readonly label = computed(() => formatMonthLabel(this.month()));
   readonly options = computed<MonthOption[]>(() =>
     Array.from({ length: 12 }, (_, index) => {

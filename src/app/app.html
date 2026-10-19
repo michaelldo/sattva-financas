@@ -19,7 +19,7 @@
     <p>Controle suas finanças pessoais de forma simples e eficiente.</p>
   </header>
 
-  <section class="balance-card" aria-label="Balanco mensal">
+  <section class="balance-card" aria-label="Balanço mensal">
     <div class="balance-card__inner">
       <h1>Balanço</h1>
 
@@ -34,7 +34,7 @@
       <div class="metric">
         <span class="metric__label">
           <img src="iconoir_money-square-solid.svg" alt="" />
-          Saidas
+          Saídas
         </span>
         <strong>{{
           summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
@@ -65,7 +65,7 @@
     <app-month-picker [(month)]="currentMonth" />
   </section>
 
-  <section class="entry-grid" aria-label="Lançamento">
+  <section class="entry-grid" aria-label="Lançamentos">
     <app-entry-card
       heading="Gastos Variáveis"
       itemLabel="gasto variável"
@@ -80,7 +80,12 @@
       <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
         <label
           >Descrição:
-          <input type="text" formControlName="description" placeholder="Mercado" />
+          <input
+            type="text"
+            formControlName="description"
+            [maxLength]="maxDescriptionLength"
+            placeholder="Mercado"
+          />
         </label>
         <label>
           R$:
@@ -89,7 +94,13 @@
         @if (variableExpenseForm.controls.isInstallment.value) {
           <label>
             Parcelas
-            <input type="number" min="1" step="1" formControlName="installments" />
+            <input
+              type="number"
+              min="1"
+              [max]="maxInstallments"
+              step="1"
+              formControlName="installments"
+            />
           </label>
         }
         <div class="form-actions">
@@ -115,7 +126,12 @@
       <form [formGroup]="fixedExpenseForm" (ngSubmit)="addFixedExpense()">
         <label>
           Descrição:
-          <input type="text" formControlName="description" placeholder="Internet" />
+          <input
+            type="text"
+            formControlName="description"
+            [maxLength]="maxDescriptionLength"
+            placeholder="Internet"
+          />
         </label>
         <label>
           R$:
@@ -136,7 +152,12 @@
       <form [formGroup]="incomeForm" (ngSubmit)="addIncome()">
         <label>
           Descrição:
-          <input type="text" formControlName="description" placeholder="Salário" />
+          <input
+            type="text"
+            formControlName="description"
+            [maxLength]="maxDescriptionLength"
+            placeholder="Salário"
+          />
         </label>
         <label>
           R$:
@@ -159,7 +180,7 @@
           <dd>{{ summary().fixedExpenses | currency }}</dd>
         </div>
         <div>
-          <dt>Gastos Variaveis</dt>
+          <dt>Gastos Variáveis</dt>
           <dd>{{ summary().variableExpenses | currency }}</dd>
         </div>
         <div>
@@ -185,7 +206,12 @@
       <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
         <label>
           Descrição:
-          <input type="text" formControlName="description" placeholder="Viagem" />
+          <input
+            type="text"
+            formControlName="description"
+            placeholder="Viagem"
+            [maxLength]="maxDescriptionLength"
+          />
         </label>
         <label>
           R$:
@@ -225,7 +251,7 @@
             <button
               class="menu-item"
               type="button"
-              [disabled]="driveSync.status() === 'synced'"
+              [disabled]="driveSync.status() === 'syncing'"
               (click)="syncDrive()"
             >
               Sincronizar agora
@@ -247,7 +273,7 @@
       <section>
         <h3>Backup manual</h3>
         <p class="menu-hint">Prefere não usar o Google? Salve seus dados como arquivo.</p>
-        <button class="menu-item" type="button" (click)="exportBackup()">Exportar Backup</button>
+        <button class="menu-item" type="button" (click)="exportBackup()">Exportar backup</button>
         <label class="menu-item">
           Importar backup
           <input type="file" accept=".json,application/json" (change)="importBackup($event)" />
@@ -276,7 +302,7 @@
         <li>Escolha o arquivo JSON salvo anteriormente.</li>
       </ol>
       <p>Ao importar, os dados atuais deste navegador serão substituídos pelo arquivo escolhido.</p>
-      <p>Dica: conectando o Google drive, essa cópia é feita automaticamente.</p>
+      <p>Dica: conectando o Google Drive, essa cópia é feita automaticamente.</p>
     </div>
   </app-modal>
 
@@ -285,11 +311,19 @@
       <div class="report-range">
         <div class="report-field">
           <span>De:</span>
-          <app-month-picker [(month)]="reportFrom" align="start" />
+          <app-month-picker
+            [month]="reportFrom()"
+            (monthChange)="setReportFrom($event)"
+            align="start"
+          />
         </div>
         <div class="report-field">
           <span>Até:</span>
-          <app-month-picker [(month)]="reportTo" align="start" />
+          <app-month-picker
+            [month]="reportTo()"
+            (monthChange)="setReportTo($event)"
+            align="start"
+          />
         </div>
       </div>
       <div class="report-actions">
@@ -303,7 +337,7 @@
     </div>
 
     @if (reportRangeError(); as error) {
-      <p class="report-error" role="alert">{{ error }}</p>
+      <p class="report-text report-error" role="alert">{{ error }}</p>
     } @else {
       <textarea class="report-text" readonly [value]="reportText()"></textarea>
     }
@@ -317,7 +351,7 @@
     <form class="modal-content edit-form" [formGroup]="editForm" (ngSubmit)="saveEdit()">
       <label>
         Descrição
-        <input type="text" formControlName="description" />
+        <input type="text" formControlName="description" [maxLength]="maxDescriptionLength" />
       </label>
       <label>
         {{ editingInstallment() ? 'Valor total' : 'R$' }}
@@ -327,7 +361,13 @@
       @if (editingInstallment()) {
         <label>
           Parcelas
-          <input type="number" min="1" step="1" formControlName="installments" />
+          <input
+            type="number"
+            min="1"
+            step="1"
+            [max]="maxInstallments"
+            formControlName="installments"
+          />
         </label>
         <p class="edit-hint">As parcelas serão recalculadas a partir do valor total.</p>
       }
@@ -336,7 +376,7 @@
         <p class="edit-hint">
           A alteração vale a partir de
           <strong> {{ currentMonth() + '-01' | date: 'MMMM y' }}</strong
-          >. Os meses Anteriores continuarão com os dados antigos.
+          >. Os meses anteriores continuarão com os dados antigos.
         </p>
       }
 

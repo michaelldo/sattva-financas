@@ -42,4 +42,14 @@ describe('ToastService', () => {
 
     expect(service.toasts().map((toast) => toast.message)).toEqual(['Segunda']);
   });
+
+  it('com duration null, fica na tela até ser fechado', () => {
+    const id = service.show('Nova versão disponível', { duration: null });
+
+    vi.advanceTimersByTime(60_000);
+    expect(service.toasts()).toHaveLength(1);
+
+    service.dismiss(id);
+    expect(service.toasts()).toEqual([]);
+  });
 });

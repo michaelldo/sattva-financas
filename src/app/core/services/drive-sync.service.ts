@@ -28,13 +28,13 @@ export class DriveSyncService {
   constructor() {
     //Sync automatico depois de alguns segundo de alteração local
     effect((onCleanup) => {
-      const modifiedAt = this.storage.lastModified();
+      this.storage.lastModified();
 
       if (!this.auth.isConnected()) {
         return;
       }
 
-      const timer = setTimeout(() => this.pushIfChanged(modifiedAt), AUTO_SYNC_DELAY_MS);
+      const timer = setTimeout(() => this.pushIfChanged(), AUTO_SYNC_DELAY_MS);
       onCleanup(() => clearTimeout(timer)); //Caso tenha alteração antes do prazo cancela o envio anterior
     });
   }
@@ -56,13 +56,16 @@ export class DriveSyncService {
         remoteModifiedAt,
       );
 
+      let syncedModifiedAt = this.storage.lastModified();
       if (action === 'download' && remote) {
         this.storage.replaceAll(remote.entries, remoteModifiedAt!);
+        syncedModifiedAt = remoteModifiedAt!;
       } else if (action === 'upload') {
-        await this.upload();
+        syncedModifiedAt = await this.upload();
       }
 
-      this.markSynced();
+      this.markSynced(syncedModifiedAt);
+      this.pushPendingChanges();
       return action;
     } catch (error) {
       this.statusSignal.set('error');
@@ -78,7 +81,8 @@ export class DriveSyncService {
     this.statusSignal.set('idle');
   }
 
-  private async pushIfChanged(modifiedAt: string): Promise<void> {
+  private async pushIfChanged(): Promise<void> {
+    const modifiedAt = this.storage.lastModified();
     //Só envia depois da primeira sincronização com o drive, evita sobrescrever dados locais antigos e se houver algo novo
     if (this.syncedModifiedAt === null || modifiedAt === this.syncedModifiedAt) {
       return;
@@ -95,14 +99,24 @@ export class DriveSyncService {
 
     this.statusSignal.set('syncing');
     try {
-      await this.upload();
-      this.markSynced();
+      this.markSynced(await this.upload());
+      this.pushPendingChanges();
     } catch {
       this.statusSignal.set('error');
     }
   }
 
-  private async upload(): Promise<void> {
+  /**
+   *  Alterações feitas DURANTE o envio são ignoradas ( status: syncing ),
+   *  Ao terminar, se os dados mudarem desde o ultimo envio, é enviado novamente.
+   */
+  private pushPendingChanges(): void {
+    if (this.storage.lastModified() !== this.syncedModifiedAt) {
+      void this.pushIfChanged();
+    }
+  }
+
+  private async upload(): Promise<string> {
     const modifiedAt = this.storage.lastModified();
     //data dos dados [ não do envio ]. Compara com outro aparelho
     const content = this.backup.serialize(this.storage.entries(), new Date(modifiedAt));
@@ -112,10 +126,13 @@ export class DriveSyncService {
     } else {
       this.fileId = await this.api.create(content);
     }
+
+    return modifiedAt;
   }
 
-  private markSynced(): void {
-    this.syncedModifiedAt = this.storage.lastModified();
+  /** Registra a versão que está no drive */
+  private markSynced(modifiedAt: string): void {
+    this.syncedModifiedAt = modifiedAt;
     this.lastSyncedAtSignal.set(new Date());
     this.statusSignal.set('synced');
   }

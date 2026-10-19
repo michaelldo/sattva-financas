@@ -18,7 +18,7 @@ export class EntryCard {
   //input
   readonly heading = input.required<string>();
   readonly itemLabel = input.required<string>();
-  readonly entries = input.required<WalletEntry[]>();
+  readonly entries = input.required<readonly WalletEntry[]>();
   readonly month = input.required<MonthKey>();
   readonly showPaidStatus = input(false);
   readonly variant = input<'light' | 'dark'>('light');
@@ -33,7 +33,7 @@ export class EntryCard {
 
   readonly countLabel = computed(() => {
     const count = this.entries().length;
-    return `${count} ${count <= 1 ? 'Lançamento' : 'Lançamentos'}`;
+    return `${count} ${count === 1 ? 'Lançamento' : 'Lançamentos'}`;
   });
 
   readonly paidIds = computed(
