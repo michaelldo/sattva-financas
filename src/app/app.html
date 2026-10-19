@@ -15,7 +15,7 @@
   </button>
 
   <header class="hero">
-    <img src="sattva.png" alt="Sattva Finanças" class="brand-logo" />
+    <img src="sattva.png" alt="Sattva Finanças" class="brand-logo" width="158" height="151" />
     <p>Controle suas finanças pessoais de forma simples e eficiente.</p>
   </header>
 
@@ -37,12 +37,12 @@
           Saídas
         </span>
         <strong>{{
-          summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
-        }}</strong>
+            summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
+          }}</strong>
         @if (summary().fixedExpenses + summary().variableExpenses > 0) {
           @if (amountToPay() > 0) {
             <small class="metric__hint is-pending"
-              >Falta pagar: {{ amountToPay() | currency }}</small
+            >Falta pagar: {{ amountToPay() | currency }}</small
             >
           } @else {
             <small class="metric__hint is-done">Tudo pago ✓</small>
@@ -79,7 +79,7 @@
     >
       <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
         <label
-          >Descrição:
+        >Descrição:
           <input
             type="text"
             formControlName="description"
@@ -306,42 +306,13 @@
     </div>
   </app-modal>
 
-  <app-modal heading="Relatório" [wide]="true" [(open)]="reportOpen">
-    <div class="report-toolbar">
-      <div class="report-range">
-        <div class="report-field">
-          <span>De:</span>
-          <app-month-picker
-            [month]="reportFrom()"
-            (monthChange)="setReportFrom($event)"
-            align="start"
-          />
-        </div>
-        <div class="report-field">
-          <span>Até:</span>
-          <app-month-picker
-            [month]="reportTo()"
-            (monthChange)="setReportTo($event)"
-            align="start"
-          />
-        </div>
-      </div>
-      <div class="report-actions">
-        <button type="button" [disabled]="reportRangeError() !== null" (click)="copyReport()">
-          Copiar
-        </button>
-        <button type="button" [disabled]="reportRangeError() !== null" (click)="printReport()">
-          Imprimir
-        </button>
-      </div>
-    </div>
-
-    @if (reportRangeError(); as error) {
-      <p class="report-text report-error" role="alert">{{ error }}</p>
-    } @else {
-      <textarea class="report-text" readonly [value]="reportText()"></textarea>
-    }
-  </app-modal>
+  @if (reportOpen()) {
+    <app-report-dialog
+      [(open)]="reportOpen"
+      [entries]="entries()"
+      [initialMonth]="currentMonth()"
+    />
+  }
 
   <app-modal
     heading="Editar lançamento"
@@ -387,5 +358,4 @@
     </form>
   </app-modal>
   <app-toast-container />
-  <pre class="print-report">{{ reportText() }}</pre>
 </main>

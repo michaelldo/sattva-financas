@@ -1,12 +1,18 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
-import { getCurrentMonth, MonthKey, monthRange } from './core/utils/month.utils';
+import { getCurrentMonth } from './core/utils/month.utils';
 import { MAX_DESCRIPTION_LENGTH } from './core/utils/entry-parser';
 import { BackupService } from './core/services/backup.service';
-import { ReportService } from './core/services/report.service';
 import {
   buildInstallments,
   remainingAfterInstallment,
@@ -32,13 +38,14 @@ import { ToastService } from './core/services/toast.service';
 import { GoogleAuthService } from './core/services/google-auth.service';
 import { SyncAction } from './core/utils/sync.utils';
 import { DriveSyncService } from './core/services/drive-sync.service';
+import { ReportDialog } from './features/report-dialog/report-dialog';
 
 const SYNC_MESSAGES: Record<SyncAction, string> = {
   download: 'Dados atualizados com o backup do Drive.',
   upload: 'Backup salvo no Drive.',
   none: 'Tudo sincronizado.',
 };
-const MAX_REPORT_MONTHS = 36;
+
 const MAX_INSTALLMENTS = 120;
 
 const DESCRIPTION_VALIDATORS = [
@@ -64,16 +71,17 @@ const INSTALLMENTS_VALIDATORS = [
     MonthPicker,
     Modal,
     ToastContainer,
+    ReportDialog,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   private readonly formBuilder = inject(FormBuilder);
   private readonly walletStorage = inject(WalletStorageService);
   private readonly swUpdate = inject(SwUpdate, { optional: true });
   private readonly backup = inject(BackupService);
-  private readonly report = inject(ReportService);
   private readonly toast = inject(ToastService);
   protected readonly googleAuth = inject(GoogleAuthService);
   protected readonly Kind = TransactionKind;
@@ -125,30 +133,6 @@ export class App {
     );
   });
   readonly summary = computed<WalletSummary>(() => summarize(this.entriesByKind()));
-  readonly reportFrom = signal(getCurrentMonth());
-  readonly reportTo = signal(getCurrentMonth());
-
-  readonly reportRangeError = computed(() => {
-    const from = this.reportFrom();
-    const to = this.reportTo();
-
-    if (monthRange(from, to).length > MAX_REPORT_MONTHS) {
-      return `Escolha um período de até ${MAX_REPORT_MONTHS} meses.`;
-    }
-    return null;
-  });
-
-  readonly reportText = computed(() => {
-    if (this.reportRangeError()) {
-      return '';
-    }
-
-    return this.report.build({
-      from: this.reportFrom(),
-      to: this.reportTo(),
-      entries: this.entries(),
-    });
-  });
 
   constructor() {
     effect(() => {
@@ -322,43 +306,9 @@ export class App {
     }
   }
 
-  async copyReport(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(this.reportText());
-      this.toast.success('Relatório copiado!');
-    } catch {
-      this.toast.error('Não foi possível copiar o relatório.');
-    }
-  }
-
-  printReport(): void {
-    window.print();
-  }
-
-  setReportFrom(month: MonthKey): void {
-    this.reportFrom.set(month);
-    if (month > this.reportTo()) {
-      this.reportTo.set(month);
-    }
-  }
-
-  setReportTo(month: MonthKey): void {
-    this.reportTo.set(month);
-    if (month < this.reportFrom()) {
-      this.reportFrom.set(month);
-    }
-  }
-
   openFromMenu(modal: 'report' | 'help'): void {
     this.menuOpen.set(false);
-
-    if (modal === 'report') {
-      this.reportFrom.set(this.currentMonth());
-      this.reportTo.set(this.currentMonth());
-      this.reportOpen.set(true);
-    } else {
-      this.backupHelpOpen.set(true);
-    }
+    (modal === 'report' ? this.reportOpen : this.backupHelpOpen).set(true);
   }
 
   async connectDrive(): Promise<void> {

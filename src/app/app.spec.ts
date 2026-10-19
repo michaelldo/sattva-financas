@@ -326,54 +326,7 @@ describe('App', () => {
 
     expect(app.menuOpen()).toBe(false);
     expect(app.reportOpen()).toBe(true);
-  });
-
-  it('o relatório abre no mês da tela e aceita um período', async () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    await fixture.whenStable();
-
-    app.currentMonth.set('2026-03');
-    app.openFromMenu('report');
-    expect(app.reportText()).toContain('Relatório - março de 2026');
-
-    app.reportFrom.set('2026-01');
-    app.reportTo.set('2026-03');
-    expect(app.reportText()).toContain('Relatório - janeiro de 2026 a março de 2026');
-    expect(app.reportText()).toContain('Total do período');
-
-    app.setReportFrom('2026-05');
-    expect(app.reportTo()).toBe('2026-05');
-
-    app.setReportTo('2026-02');
-    expect(app.reportFrom()).toBe('2026-02');
-
-    app.setReportFrom('2020-01');
-    app.setReportTo('2026-02');
-    expect(app.reportRangeError()).toBe('Escolha um período de até 36 meses.');
-    expect(app.reportText()).toBe('');
-  });
-
-  it('escolhe o período do relatório pelos seletores de mês', async () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    const element: HTMLElement = fixture.nativeElement;
-    app.currentMonth.set('2026-03');
-    app.openFromMenu('report');
-    await fixture.whenStable();
-
-    const [fromPicker] = element.querySelectorAll<HTMLElement>('.report-range app-month-picker');
-    fromPicker.querySelector<HTMLButtonElement>('.month-trigger')!.click();
-    await fixture.whenStable();
-
-    const january = Array.from(
-      fromPicker.querySelectorAll<HTMLButtonElement>('.month-grid button'),
-    ).find((button) => button.textContent?.trim() === 'janeiro')!;
-    january.click();
-    await fixture.whenStable();
-
-    expect(app.reportFrom()).toBe('2026-01');
-    expect(app.reportText()).toContain('Relatório - janeiro de 2026 a março de 2026');
+    expect(element.querySelector('app-report-dialog')).not.toBeNull();
   });
 
   it('mostra quanto falta pagar no mês', () => {

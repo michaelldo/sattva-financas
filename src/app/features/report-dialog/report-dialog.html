@@ -1,0 +1,26 @@
+<app-modal heading="Relatório" [wide]="true" [(open)]="open">
+  <div class="report-toolbar">
+    <div class="report-range">
+      <div class="report-field">
+        <span>De:</span>
+        <app-month-picker [month]="from()" (monthChange)="setFrom($event)" align="start" />
+      </div>
+      <div class="report-field">
+        <span>Até:</span>
+        <app-month-picker [month]="to()" (monthChange)="setTo($event)" align="start" />
+      </div>
+    </div>
+    <div class="report-actions">
+      <button type="button" [disabled]="rangeError() !== null" (click)="copy()">Copiar</button>
+      <button type="button" [disabled]="rangeError() !== null" (click)="print()">Imprimir</button>
+    </div>
+  </div>
+
+  @if (rangeError(); as error) {
+    <p class="report-text report-error" role="alert">{{ error }}</p>
+  } @else {
+    <textarea class="report-text" readonly [value]="text()"></textarea>
+  }
+</app-modal>
+
+<pre class="print-report">{{ text() }}</pre>

@@ -289,8 +289,7 @@ dd {
   text-transform: uppercase;
 }
 
-.menu-item,
-.report-actions button {
+.menu-item {
   display: flex;
   align-items: center;
   min-height: 44px;
@@ -305,8 +304,7 @@ dd {
 }
 
 .menu-item:hover,
-.menu-item:focus-within,
-.report-actions button:hover {
+.menu-item:focus-within {
   background: #84dbab;
   color: #173036;
 }
@@ -388,71 +386,12 @@ dd {
   padding-left: 22px;
 }
 
-.report-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px 0;
-}
-
-.report-range {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-}
-
-.report-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  --month-picker-width: 180px;
-}
-
-.report-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.report-actions button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.report-text.report-error {
-  color: #b3261e;
-  font-family: inherit;
-  font-weight: 600;
-}
-
 .menu-hint {
   margin: 0;
   font-size: 0.85rem;
   opacity: 0.8;
 }
 
-.report-text {
-  width: calc(100% - 36px);
-  min-height: 430px;
-  margin: 16px 18px 18px;
-  resize: vertical;
-  border: 1px solid rgb(20 29 35 / 16%);
-  border-radius: 14px;
-  background: #ffffff;
-  color: #141d23;
-  padding: 16px;
-  font:
-    0.95rem/1.55 Consolas,
-    'Courier New',
-    monospace;
-}
-
-.print-report {
-  display: none;
-}
 
 @media (max-width: 980px) {
   .wallet-shell {
@@ -563,15 +502,5 @@ dd {
   .wallet-shell {
     width: 100%;
     padding: 0;
-  }
-
-  .print-report {
-    display: block;
-    color: #000000;
-    white-space: pre-wrap;
-    font:
-      12pt/1.45 Consolas,
-      'Courier New',
-      monospace;
   }
 }
