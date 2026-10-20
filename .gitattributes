@@ -1,0 +1,9 @@
+# Todo arquivo de texto fica com final de linha LF no repositório (padrão Linux/Mac).
+# Sem isso, o Windows grava CRLF e o Git acha que o arquivo inteiro mudou.
+* text=auto eol=lf
+
+# Binários: nunca mexer
+*.png binary
+*.ico binary
+*.woff binary
+*.woff2 binary
