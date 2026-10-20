@@ -56,7 +56,9 @@ export class GoogleAuthService {
 
   disconnect(): void {
     if (this.accessToken && typeof google !== 'undefined') {
-      google.accounts.oauth2.revoke(this.accessToken, () => {});
+      google.accounts.oauth2.revoke(this.accessToken, () => {
+        //nada  a fazer: desconta localmente, mesmo se a revogação falhar
+      });
     }
 
     this.accessToken = null;

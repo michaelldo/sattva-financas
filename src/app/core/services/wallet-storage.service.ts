@@ -1,7 +1,7 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { TransactionKind, WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth } from '../utils/month.utils';
-import { createId } from '../../id-generator';
+import { createId } from '../utils/id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
 import { parseWalletEntry, withUniqueIds } from '../utils/entry-parser';
 import {
@@ -299,7 +299,7 @@ export class WalletStorageService {
     return migratedEntries;
   }
 
-  private readLegacyList(key: string): Array<Record<string, unknown>> {
+  private readLegacyList(key: string): Record<string, unknown>[] {
     const rawValue = localStorage.getItem(key);
 
     if (!rawValue) {

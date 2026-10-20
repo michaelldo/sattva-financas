@@ -1,6 +1,6 @@
 import { InstallmentInfo, TransactionKind, WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth, isMonthKey, MonthKey } from './month.utils';
-import { createId } from '../../id-generator';
+import { createId } from './id-generator';
 
 const TRANSACTION_KIND: readonly string[] = Object.values(TransactionKind);
 export const MAX_DESCRIPTION_LENGTH = 120;

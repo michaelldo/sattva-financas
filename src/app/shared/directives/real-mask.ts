@@ -35,8 +35,13 @@ export function parseReal(text: string): number | null {
 export class RealMask implements ControlValueAccessor {
   private readonly input = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
 
-  private onChange: (value: number | null) => void = () => {};
-  protected onTouched: () => void = () => {};
+  //Funções vazias que o angular troca
+  private onChange: (value: number | null) => void = () => {
+    /** substituída em registerOnChange */
+  };
+  protected onTouched: () => void = () => {
+    /** substituída em registerOnTouched */
+  };
 
   writeValue(value: number | null): void {
     this.input.value = formatReal(value);

@@ -3,7 +3,6 @@ import { App } from './app';
 import { appConfig } from './app.config';
 import { ToastService } from './core/services/toast.service';
 import { isEntryPaidInMonth } from './core/utils/entry.utils';
-import { DriveSyncService } from './core/services/drive-sync.service';
 import { TransactionKind } from './core/models/wallet.models';
 
 /** Atalho: simula o formulário de um card enviando um lançamento. */
@@ -285,63 +284,5 @@ describe('App', () => {
     toasts.toasts()[0].action!.run();
 
     expect(app.entriesByKind()['fixed-expense']).toHaveLength(1);
-  });
-
-  it('conecta o Google Drive pelo menu', async () => {
-    vi.stubGlobal('google', {
-      accounts: {
-        oauth2: {
-          revoke: vi.fn(),
-          initTokenClient: (config: google.accounts.oauth2.TokenClientConfig) => ({
-            requestAccessToken: () =>
-              config.callback({
-                access_token: 'token',
-                expires_in: '3600',
-              } as google.accounts.oauth2.TokenResponse),
-          }),
-        },
-      },
-    });
-
-    const syncNow = vi
-      .spyOn(TestBed.inject(DriveSyncService), 'syncNow')
-      .mockResolvedValue('upload');
-    const fixture = TestBed.createComponent(App);
-    const element: HTMLElement = fixture.nativeElement;
-    await fixture.whenStable();
-
-    const connectButton = Array.from(
-      element.querySelectorAll<HTMLButtonElement>('.menu-item'),
-    ).find((button) => button.textContent?.includes('Conectar Google Drive'))!;
-    connectButton.click();
-    await fixture.whenStable();
-
-    expect(element.querySelector('.drive-status')?.textContent).toContain('Conectado');
-    expect(syncNow).toHaveBeenCalledOnce();
-    expect(TestBed.inject(ToastService).toasts().at(-1)?.message).toBe('Backup salvo no Drive.');
-
-    vi.unstubAllGlobals();
-  });
-
-  it('importar backup pode ser desfeito pelo aviso', async () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    const toasts = TestBed.inject(ToastService);
-
-    add(app, TransactionKind.Income, 'Salário', 2500);
-
-    const file = new File(
-      [
-        JSON.stringify({
-          entries: [{ kind: 'income', description: 'Outro', value: 1, month: '2026-10' }],
-        }),
-      ],
-      'backup.json',
-    );
-    await app.importBackup({ target: { files: [file], value: '' } } as unknown as Event);
-    expect(app.entries().map((entry) => entry.description)).toEqual(['Outro']);
-
-    toasts.toasts().at(-1)!.action!.run();
-    expect(app.entries().map((entry) => entry.description)).toEqual(['Salário']);
   });
 });

@@ -4,7 +4,7 @@ import {
   VariableExpenseEntry,
   WalletEntry,
 } from '../models/wallet.models';
-import { createId } from '../../id-generator';
+import { createId } from './id-generator';
 import { addMonths, MonthKey } from './month.utils';
 import { buildInstallments } from './installments';
 

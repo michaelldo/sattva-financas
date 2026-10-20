@@ -56,7 +56,7 @@ export class BackupService {
         return parseWalletEntry(raw);
       } catch (error) {
         const reason = error instanceof Error ? error.message : '';
-        throw new Error(`Item ${index + 1}: ${reason}`);
+        throw new Error(`Item ${index + 1}: ${reason}`, { cause: error });
       }
     });
 

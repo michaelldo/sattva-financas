@@ -1,4 +1,4 @@
-import { createId } from '../../id-generator';
+import { createId } from './id-generator';
 import { MonthKey } from './month.utils';
 import {
   EntriesByKind,
