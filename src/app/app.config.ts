@@ -8,6 +8,8 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { googleAuthInterceptor } from './core/services/google-auth.interceptor';
 
 registerLocaleData(localePt);
 
@@ -16,6 +18,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     { provide: LOCALE_ID, useValue: 'pt-BR' },
     { provide: DEFAULT_CURRENCY_CODE, useValue: 'BRL' },
+    provideHttpClient(withInterceptors([googleAuthInterceptor])),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

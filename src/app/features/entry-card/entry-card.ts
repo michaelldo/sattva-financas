@@ -18,13 +18,14 @@ export class EntryCard {
   //input
   readonly heading = input.required<string>();
   readonly itemLabel = input.required<string>();
-  readonly entries = input.required<WalletEntry[]>();
+  readonly entries = input.required<readonly WalletEntry[]>();
   readonly month = input.required<MonthKey>();
   readonly showPaidStatus = input(false);
   readonly variant = input<'light' | 'dark'>('light');
-  readonly edit = output<WalletEntry>();
+  readonly remaining = input<ReadonlyMap<string, number>>(new Map());
 
   //output
+  readonly edit = output<WalletEntry>();
   readonly remove = output<string>();
   readonly togglePaid = output<WalletEntry>();
 
@@ -32,7 +33,7 @@ export class EntryCard {
 
   readonly countLabel = computed(() => {
     const count = this.entries().length;
-    return `${count} ${count <= 1 ? 'Lançamento' : 'Lançamentos'}`;
+    return `${count} ${count === 1 ? 'Lançamento' : 'Lançamentos'}`;
   });
 
   readonly paidIds = computed(

@@ -6,12 +6,14 @@ const realFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 2,
 });
 
+export const MAX_DIGITS = 11;
+
 export function formatReal(value: number | null): string {
   return value === null ? '' : realFormatter.format(value);
 }
 
 export function parseReal(text: string): number | null {
-  const digits = text.replace(/\D/g, '');
+  const digits = text.replace(/\D/g, '').replace(/^0+/, '').slice(0, MAX_DIGITS);
   return digits ? Number(digits) / 100 : null;
 }
 
@@ -33,8 +35,13 @@ export function parseReal(text: string): number | null {
 export class RealMask implements ControlValueAccessor {
   private readonly input = inject<ElementRef<HTMLInputElement>>(ElementRef).nativeElement;
 
-  private onChange: (value: number | null) => void = () => {};
-  protected onTouched: () => void = () => {};
+  //Funções vazias que o angular troca
+  private onChange: (value: number | null) => void = () => {
+    /** substituída em registerOnChange */
+  };
+  protected onTouched: () => void = () => {
+    /** substituída em registerOnTouched */
+  };
 
   writeValue(value: number | null): void {
     this.input.value = formatReal(value);

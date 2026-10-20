@@ -1,0 +1,47 @@
+<app-modal heading="Editar lançamento" [open]="true" (openChange)="closed.emit()">
+  <form class="app-form edit-form" [formGroup]="form" (ngSubmit)="save()">
+    <label>
+      Descrição
+      <input type="text" formControlName="description" [maxLength]="maxDescriptionLength" />
+    </label>
+    <label>
+      {{ valueLabel() }}
+      <input type="text" formControlName="value" appRealMask />
+    </label>
+
+    @if (installment()) {
+      <label>
+        Parcelas
+        <input
+          type="number"
+          min="1"
+          [max]="maxInstallments"
+          step="1"
+          formControlName="installments"
+        />
+      </label>
+      <p class="edit-hint">As parcelas serão recalculadas a partir do valor total.</p>
+    }
+
+    @if (isSaving()) {
+      <p class="edit-hint">
+        Total guardado até {{ month() + '-01' | date: "MMMM 'de' y" }}:
+        <strong>{{ savedTotal() | currency }}</strong
+        >. A alteração vale só para este mês.
+      </p>
+    }
+
+    @if (isFixedExpense()) {
+      <p class="edit-hint">
+        A alteração vale a partir de
+        <strong>{{ month() + '-01' | date: "MMMM 'de' y" }}</strong
+        >. Os meses anteriores continuarão com os dados antigos.
+      </p>
+    }
+
+    <div class="edit-actions">
+      <button type="button" class="secondary" (click)="closed.emit()">Cancelar</button>
+      <button type="submit">Salvar</button>
+    </div>
+  </form>
+</app-modal>

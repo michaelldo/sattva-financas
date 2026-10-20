@@ -1,4 +1,5 @@
 export type MonthKey = string;
+const MONTH_KEY_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export function toMonthKey(date: Date): MonthKey {
   const year = date.getFullYear();
@@ -24,4 +25,16 @@ export function formatMonthLabel(month: MonthKey): string {
   return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(
     monthKeyToDate(month),
   );
+}
+
+export function monthRange(from: MonthKey, to: MonthKey): MonthKey[] {
+  const months: MonthKey[] = [];
+  for (let month = from; month <= to; month = addMonths(month, 1)) {
+    months.push(month);
+  }
+  return months;
+}
+
+export function isMonthKey(value: unknown): value is MonthKey {
+  return typeof value === 'string' && MONTH_KEY_PATTERN.test(value);
 }

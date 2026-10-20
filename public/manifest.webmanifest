@@ -1,11 +1,15 @@
 {
+  "id": "/",
   "name": "Sattva Finanças",
   "short_name": "Sattva",
+  "description": "Controle simples de finanças pessoais, gratuito e offline.",
+  "lang": "pt-BR",
+  "categories": ["finance", "productivity"],
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#121b21",
+  "background_color": "#121b21",
   "icons": [
     {
       "src": "icons/icon-16x16.png",

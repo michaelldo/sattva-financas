@@ -1,6 +1,9 @@
+<!-- O clique no fundo é só um atalho de mouse. No teclado o <dialog> nativo já fecha com o ESC -->
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
 <dialog
   #dialog
   [class.wide]="wide()"
+  [class.drawer]="variant() === 'drawer'"
   [attr.aria-labelledby]="titleId"
   (close)="close()"
   (click)="closeOnBackdropClick($event)"

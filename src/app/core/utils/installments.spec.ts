@@ -1,4 +1,9 @@
-import { splitIntoInstallments } from './installments';
+import {
+  buildInstallments,
+  remainingAfterInstallment,
+  splitIntoInstallments,
+} from './installments';
+import { createEntry } from './entry.utils';
 
 describe('aplitIntoInstallments', () => {
   it('não perde centavos', () => {
@@ -13,5 +18,32 @@ describe('aplitIntoInstallments', () => {
 
   it('retorna o valor interiro quando é 1 parcela', () => {
     expect(splitIntoInstallments(59.9, 1)).toEqual([59.9]);
-  })
-})
+  });
+});
+
+describe('remainingAfterInstallment', () => {
+  it('mostra quanto falta depois de cada parcela', () => {
+    const entries = buildInstallments({
+      description: 'Tênis',
+      total: 150,
+      count: 3,
+      startMonth: '2026-10',
+      groupId: 'g1',
+    }).map((data) => createEntry(data));
+
+    const remaining = remainingAfterInstallment(entries);
+
+    expect(entries.map((entry) => remaining.get(entry.id))).toEqual([100, 50, 0]);
+  });
+
+  it('ignora lançamentos que não são parcelados', () => {
+    const single = createEntry({
+      kind: 'variable-expense',
+      description: 'Lanche',
+      value: 25,
+      month: '2026-10',
+    });
+
+    expect(remainingAfterInstallment([single]).has(single.id)).toBe(false);
+  });
+});

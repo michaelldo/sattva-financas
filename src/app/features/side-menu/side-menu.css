@@ -1,0 +1,104 @@
+.side-menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 24px;
+  padding: 22px;
+}
+
+.side-menu section {
+  display: grid;
+  gap: 8px;
+}
+
+.side-menu h3 {
+  margin: 0 0 4px;
+  color: #84dbab;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: #284d52;
+  color: #f4f4f4;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-item:hover:not(:disabled),
+.menu-item:focus-within {
+  background: #84dbab;
+  color: #173036;
+}
+
+.menu-item:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.drive-status {
+  margin: 0;
+  color: #84dbab;
+  font-weight: 700;
+}
+
+.sync-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #84dbab;
+}
+
+.sync-status.is-warning {
+  color: #f5c86b;
+}
+
+.menu-item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.menu-footer {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  color: #84dbab;
+  text-align: center;
+}
+
+.menu-footer a {
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.modal-content {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  text-align: left;
+}
+
+.modal-content p,
+.modal-content ol {
+  margin: 0;
+}
+
+.modal-content ol {
+  padding-left: 22px;
+}
+
+.menu-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}

@@ -1,0 +1,26 @@
+.edit-form {
+  padding: 22px;
+  text-align: left;
+}
+
+.edit-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.edit-actions button {
+  width: auto;
+}
+
+.edit-actions .secondary {
+  background: transparent;
+  color: inherit;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
