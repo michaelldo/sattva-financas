@@ -129,7 +129,7 @@
           <dd>{{ summary().income | currency }}</dd>
         </div>
         <div>
-          <dt>Cofrinho</dt>
+          <dt>Guardado no Cofrinho</dt>
           <dd>{{ summary().savings | currency }}</dd>
         </div>
       </dl>
@@ -139,7 +139,7 @@
       heading="Cofrinho"
       itemLabel="cofrinho"
       variant="dark"
-      [entries]="entriesByKind()[Kind.Saving]"
+      [entries]="savingsCardEntries()"
       [month]="currentMonth()"
       (edit)="editingEntry.set($event)"
       (remove)="removeEntry($event)"

@@ -4,7 +4,7 @@ const path = require('path');
 
 const src = path.join(__dirname, '..', 'public', 'sattva.png');
 const outDir = path.join(__dirname, '..', 'public', 'icons');
-const sizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+const sizes = [16, 32, 72, 96, 128, 144, 152, 180, 192, 384, 512];
 
 (async () => {
   try {
@@ -23,8 +23,6 @@ const sizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
       const maskPath = path.join(outDir, `icon-${size}x${size}-maskable.png`);
       await sharp(srcPath).toFile(maskPath);
     }
-
-
   } catch (err) {
     console.error(err);
     process.exit(1);

@@ -115,4 +115,31 @@ describe('EditEntryDialog', () => {
       ['2026-03', 1200],
     ]);
   });
+
+  it('cofrinho: edita só o valor guardado no mês da tela', async () => {
+    storage.addOrUpdateSaving({
+      kind: TransactionKind.Saving,
+      description: 'Viagem',
+      value: 100,
+      month: '2026-10',
+    });
+    storage.addOrUpdateSaving({
+      kind: TransactionKind.Saving,
+      description: 'Viagem',
+      value: 1000,
+      month: '2026-11',
+    });
+    const { dialog } = await open(storage.entries()[0], '2026-11');
+
+    expect(dialog.form.getRawValue().value).toBe(1000);
+    expect(dialog.savedTotal()).toBe(1100);
+
+    dialog.form.patchValue({ value: 400 });
+    dialog.save();
+
+    expect(storage.entries()[0]).toMatchObject({
+      value: 500,
+      deposits: { '2026-10': 100, '2026-11': 400 },
+    });
+  });
 });

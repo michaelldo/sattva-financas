@@ -55,3 +55,10 @@ export interface WalletSummary {
 export type EntryOfKind<K extends TransactionKind> = Extract<WalletEntry, { kind: K }>;
 
 export type EntriesByKind = { [K in TransactionKind]: EntryOfKind<K>[] };
+
+/** Cofrinho: um valor guardado, continua existindo até ser retirado */
+export interface SavingEntry extends BaseEntry {
+  kind: typeof TransactionKind.Saving;
+  deposits: Record<string, number>;
+  deletedFromMonth?: string;
+}

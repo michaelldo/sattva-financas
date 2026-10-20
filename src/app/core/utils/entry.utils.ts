@@ -29,7 +29,7 @@ export function createEntry(data: NewEntryData, now: Date = new Date()): WalletE
     case TransactionKind.Income:
       return { ...base, kind: TransactionKind.Income };
     case TransactionKind.Saving:
-      return { ...base, kind: TransactionKind.Saving };
+      return { ...base, kind: TransactionKind.Saving, deposits: { [data.month]: data.value } };
     case TransactionKind.FixedExpense:
       return { ...base, kind: TransactionKind.FixedExpense, paidMonths: {} };
     case TransactionKind.VariableExpense:
@@ -92,18 +92,21 @@ export function assertNever(valeu: never): never {
 }
 
 export function isEntryVisibleInMonth(entry: WalletEntry, month: MonthKey): boolean {
-  if (entry.kind !== TransactionKind.FixedExpense) {
+  if (entry.kind !== TransactionKind.FixedExpense && entry.kind !== TransactionKind.Saving) {
     return entry.month === month;
   }
 
   return entry.month <= month && (!entry.deletedFromMonth || month < entry.deletedFromMonth);
 }
 
-export function summarize(groups: EntriesByKind): WalletSummary {
+export function summarize(groups: EntriesByKind, month: MonthKey): WalletSummary {
   const income = sumValues(groups[TransactionKind.Income]);
   const fixedExpenses = sumValues(groups[TransactionKind.FixedExpense]);
   const variableExpenses = sumValues(groups[TransactionKind.VariableExpense]);
-  const savings = sumValues(groups[TransactionKind.Saving]);
+  const savings = groups[TransactionKind.Saving].reduce(
+    (sum, entry) => sum + (entry.deposits[month] ?? 0),
+    0,
+  );
 
   return {
     income,
@@ -112,4 +115,14 @@ export function summarize(groups: EntriesByKind): WalletSummary {
     savings,
     balance: income - fixedExpenses - variableExpenses - savings,
   };
+}
+
+/** "Viagem", " viagem " e "Viágem!" viram "viagem": usado para somar cofrinhos de mesmo nome. */
+export function normalizeDescription(description: string): string {
+  return description
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/gi, '')
+    .toLowerCase()
+    .trim();
 }

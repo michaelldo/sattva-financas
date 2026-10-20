@@ -36,6 +36,20 @@ function parsePaidMonths(value: unknown): Record<MonthKey, boolean> {
   );
 }
 
+function parseDeposits(value: unknown): Record<MonthKey, number> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const deposits = Object.fromEntries(
+    Object.entries(value)
+      .filter(([month, amount]) => isMonthKey(month) && typeof amount === 'number' && amount > 0)
+      .map(([month, amount]) => [month, Math.round((amount as number) * 100) / 100]),
+  );
+
+  return Object.keys(deposits).length > 0 ? deposits : undefined;
+}
+
 function parseDescription(value: unknown): string {
   return typeof value === 'string' ? value.trim().slice(0, MAX_DESCRIPTION_LENGTH) : '';
 }
@@ -76,8 +90,18 @@ export function parseWalletEntry(raw: unknown): WalletEntry {
   switch (kind) {
     case TransactionKind.Income:
       return { ...base, kind };
-    case TransactionKind.Saving:
-      return { ...base, kind };
+    case TransactionKind.Saving: {
+      const deposits = parseDeposits(raw['deposits']) ?? { [month]: base.value };
+      const months = Object.keys(deposits).sort();
+      return {
+        ...base,
+        kind,
+        deposits,
+        value: Object.values(deposits).reduce((sum, v) => sum + Math.round(v * 100), 0) / 100,
+        month: months[0],
+        deletedFromMonth: parseMonth(raw['deletedFromMonth']),
+      };
+    }
     case TransactionKind.FixedExpense:
       return {
         ...base,

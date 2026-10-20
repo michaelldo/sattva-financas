@@ -130,7 +130,7 @@ describe('summarize', () => {
       createEntry({ kind: TransactionKind.Saving, description: 'Reserva', value: 300, month }),
     ]);
 
-    expect(summarize(groups)).toEqual({
+    expect(summarize(groups, month)).toEqual({
       income: 3000,
       fixedExpenses: 1000,
       variableExpenses: 500,

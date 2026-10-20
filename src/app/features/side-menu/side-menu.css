@@ -68,10 +68,17 @@
   pointer-events: none;
 }
 
-.app-version {
+.menu-footer {
+  display: grid;
+  gap: 4px;
   margin-top: auto;
   color: #84dbab;
   text-align: center;
+}
+
+.menu-footer a {
+  color: inherit;
+  font-size: 0.85rem;
 }
 
 .modal-content {

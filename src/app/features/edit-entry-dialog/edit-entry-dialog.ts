@@ -1,6 +1,6 @@
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RealMask } from '../../shared/directives/real-mask';
-import { DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Modal } from '../../shared/components/modal/modal';
 import {
   ChangeDetectionStrategy,
@@ -23,10 +23,13 @@ import {
 import { MAX_DESCRIPTION_LENGTH } from '../../core/utils/entry-parser';
 import { stripInstallmentSuffix } from '../../core/utils/installments';
 import { sumValues } from '../../core/utils/entry.utils';
+import { savedUntil } from '../../core/utils/saving.utils';
+
+const SAVING_VALUE_VALIDATOR = [Validators.required, Validators.min(0)];
 
 @Component({
   selector: 'app-edit-entry-dialog',
-  imports: [Modal, ReactiveFormsModule, RealMask, DatePipe],
+  imports: [Modal, ReactiveFormsModule, RealMask, DatePipe, CurrencyPipe],
   templateUrl: './edit-entry-dialog.html',
   styleUrl: './edit-entry-dialog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,6 +59,20 @@ export class EditEntryDialog {
 
   readonly isFixedExpense = computed(() => this.entry().kind === TransactionKind.FixedExpense);
 
+  readonly isSaving = computed(() => this.entry().kind === TransactionKind.Saving);
+
+  readonly valueLabel = computed(() => {
+    if (this.installment()) {
+      return 'Valor total';
+    }
+    return this.isSaving() ? 'Guardado no mês' : 'R$';
+  });
+
+  readonly savedTotal = computed(() => {
+    const entry = this.entry();
+    return entry.kind === TransactionKind.Saving ? savedUntil(entry, this.month()) : 0;
+  });
+
   constructor() {
     effect(() => this.fillForm(this.entry()));
   }
@@ -77,6 +94,8 @@ export class EditEntryDialog {
         total: value,
         installments: raw.installments,
       });
+    } else if (entry.kind === TransactionKind.Saving) {
+      this.storage.editSavingMonth(entry.id, this.month(), { description, value });
     } else if (entry.kind === TransactionKind.FixedExpense) {
       this.storage.editFixedFromMonth(entry.id, this.month(), { description, value });
     } else {
@@ -87,6 +106,19 @@ export class EditEntryDialog {
   }
 
   private fillForm(entry: WalletEntry): void {
+    this.form.controls.value.setValidators(
+      entry.kind === TransactionKind.Saving ? SAVING_VALUE_VALIDATOR : VALUE_VALIDATORS,
+    );
+
+    if (entry.kind === TransactionKind.Saving) {
+      this.form.reset({
+        description: entry.description,
+        value: entry.deposits[this.month()] ?? 0,
+        installments: 1,
+      });
+      return;
+    }
+
     if (entry.kind === TransactionKind.VariableExpense && entry.installment) {
       const { groupId, total } = entry.installment;
       const group = this.storage

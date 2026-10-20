@@ -23,6 +23,7 @@ import { ReportDialog } from './features/report-dialog/report-dialog';
 import { EntryForm, EntryFormValue } from './features/entry-form/entry-form';
 import { EditEntryDialog } from './features/edit-entry-dialog/edit-entry-dialog';
 import { SideMenu } from './features/side-menu/side-menu';
+import { savedUntil } from './core/utils/saving.utils';
 
 @Component({
   selector: 'app-root',
@@ -70,7 +71,16 @@ export class App {
       this.currentMonth(),
     );
   });
-  readonly summary = computed<WalletSummary>(() => summarize(this.entriesByKind()));
+  readonly summary = computed<WalletSummary>(() =>
+    summarize(this.entriesByKind(), this.currentMonth()),
+  );
+
+  readonly savingsCardEntries = computed(() =>
+    this.entriesByKind()[TransactionKind.Saving].map((saving) => ({
+      ...saving,
+      value: savedUntil(saving, this.currentMonth()),
+    })),
+  );
 
   constructor() {
     effect(() => {
@@ -130,6 +140,10 @@ export class App {
   private removalMessage(removed: WalletEntry[]): string {
     if (removed[0].kind === TransactionKind.FixedExpense) {
       return 'Gasto fixo encerrado!';
+    }
+
+    if (removed[0].kind === TransactionKind.Saving) {
+      return 'Cofrinho retirado!';
     }
 
     return removed.length > 1 ? `${removed.length} parcelas excluídas.` : 'Lançamento excluído!';

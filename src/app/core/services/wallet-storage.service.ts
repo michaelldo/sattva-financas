@@ -11,6 +11,7 @@ import {
   InstallmentChanges,
   restoreEntries,
 } from '../utils/entry-edit';
+import { addDeposit, editSavingMonth, mergeSavingGoals } from '../utils/saving.utils';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
 const MODIFIED_AT_KEY = 'sattva-wallet-modified-at';
@@ -46,20 +47,12 @@ export class WalletStorageService {
     this.save([...this.entriesSignal(), ...items.map((data) => createEntry(data, now))]);
   }
 
-  addOrUpdateSaving(entry: NewEntryData): void {
-    const normalizedDescription = this.normalizeDescription(entry.description);
-    const existingEntry = this.entriesSignal().find(
-      (e) =>
-        e.kind === TransactionKind.Saving &&
-        e.month === entry.month &&
-        this.normalizeDescription(e.description) === normalizedDescription,
-    );
+  addOrUpdateSaving(data: NewEntryData): void {
+    this.save(addDeposit(this.entriesSignal(), data));
+  }
 
-    if (existingEntry) {
-      this.update(existingEntry.id, { value: existingEntry.value + entry.value });
-    } else {
-      this.add(entry);
-    }
+  editSavingMonth(id: string, month: string, changes: EntryChanges): void {
+    this.save(editSavingMonth(this.entriesSignal(), id, month, changes));
   }
 
   update(id: string, changes: Partial<Pick<WalletEntry, 'description' | 'value'>>): void {
@@ -74,15 +67,6 @@ export class WalletStorageService {
     this.save(editInstallmentGroup(this.entriesSignal(), groupId, changes));
   }
 
-  private normalizeDescription(description: string): string {
-    return description
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^\w\s]/gi, '')
-      .toLowerCase()
-      .trim();
-  }
-
   /**
    * Remove um lançamento e permite voltar a versão original do lançamento
    */
@@ -94,12 +78,13 @@ export class WalletStorageService {
       return [];
     }
 
-    if (entryToRemove.kind === TransactionKind.FixedExpense) {
+    if (
+      entryToRemove.kind === TransactionKind.FixedExpense ||
+      entryToRemove.kind === TransactionKind.Saving
+    ) {
       this.save(
         entries.map((entry) =>
-          entry.id === id && entry.kind === TransactionKind.FixedExpense
-            ? { ...entry, deletedFromMonth: month }
-            : entry,
+          entry.id === id ? { ...entryToRemove, deletedFromMonth: month } : entry,
         ),
       );
       return [entryToRemove];
@@ -186,14 +171,16 @@ export class WalletStorageService {
       return [];
     }
 
-    return withUniqueIds(
-      stored.flatMap((raw) => {
-        try {
-          return [parseWalletEntry(raw)];
-        } catch {
-          return [];
-        }
-      }),
+    return mergeSavingGoals(
+      withUniqueIds(
+        stored.flatMap((raw) => {
+          try {
+            return [parseWalletEntry(raw)];
+          } catch {
+            return [];
+          }
+        }),
+      ),
     );
   }
 

@@ -285,4 +285,31 @@ describe('App', () => {
 
     expect(app.entriesByKind()['fixed-expense']).toHaveLength(1);
   });
+
+  it('cofrinho continua nos meses seguintes e acumula; o saldo desconta só o guardado no mês', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.currentMonth.set('2026-10');
+    add(app, TransactionKind.Saving, 'Viagem', 100);
+    app.currentMonth.set('2026-11');
+    add(app, TransactionKind.Saving, 'Viagem', 1000);
+
+    expect(app.savingsCardEntries().map((entry) => entry.value)).toEqual([1100]);
+    expect(app.summary().savings).toBe(1000);
+
+    app.currentMonth.set('2026-10');
+    expect(app.savingsCardEntries().map((entry) => entry.value)).toEqual([100]);
+    expect(app.summary().savings).toBe(100);
+
+    // retirado em dezembro: some de dezembro em diante, continua até novembro
+    app.currentMonth.set('2026-12');
+    expect(app.savingsCardEntries().map((entry) => entry.value)).toEqual([1100]);
+    expect(app.summary().savings).toBe(0);
+    app.removeEntry(app.savingsCardEntries()[0].id);
+    expect(app.savingsCardEntries()).toEqual([]);
+
+    app.currentMonth.set('2026-11');
+    expect(app.savingsCardEntries().map((entry) => entry.value)).toEqual([1100]);
+  });
 });

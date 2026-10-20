@@ -58,7 +58,46 @@ describe('ReportService', () => {
 
     expect(report.match(/Aluguel/g)).toHaveLength(2);
     expect(report).toContain('Total do período');
-    // 3000 - 1000 (out) - 1000 - 200 (nov) = 800
-    expect(report).toMatch(/└── Saldo: R\$\s800,00$/);
+    expect(report).toMatch(/└── Saldo: R\$\s800,00$/m);
+  });
+
+  it('cofrinho aparece uma vez só, no fim, com o total acumulado', () => {
+    const viagem = {
+      ...createEntry({
+        kind: TransactionKind.Saving,
+        description: 'Viagem',
+        value: 1100,
+        month: '2026-10',
+      }),
+      deposits: { '2026-10': 100, '2026-11': 1000 },
+    };
+
+    const report = service.build({ from: '2026-10', to: '2026-11', entries: [viagem] });
+
+    expect(report.match(/Viagem/g)).toHaveLength(1);
+    expect(report).toMatch(
+      /└── Cofrinho \(guardado\): R\$\s1\.100,00\n\s+└── Viagem: R\$\s1\.100,00$/,
+    );
+    // o saldo de cada mês desconta só o que foi guardado nele
+    expect(report).toContain('já descontados R$\u00a0100,00 do cofrinho');
+    expect(report).toContain('já descontados R$\u00a01.000,00 do cofrinho');
+  });
+
+  it('cofrinho retirado aparece com o total até o mês anterior', () => {
+    const viagem = {
+      ...createEntry({
+        kind: TransactionKind.Saving,
+        description: 'Viagem',
+        value: 1100,
+        month: '2026-10',
+      }),
+      deposits: { '2026-10': 100, '2026-11': 1000 },
+      deletedFromMonth: '2026-12',
+    };
+
+    const report = service.build({ from: '2026-10', to: '2026-12', entries: [viagem] });
+
+    expect(report).toContain('Viagem: R$\u00a01.100,00 (retirado em dezembro de 2026)');
+    expect(report).toContain('Cofrinho (guardado): R$\u00a00,00');
   });
 });
