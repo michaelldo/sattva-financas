@@ -7,8 +7,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
-import { filter } from 'rxjs';
 import { getCurrentMonth } from './core/utils/month.utils';
 import { buildInstallments, remainingAfterInstallment } from './core/utils/installments';
 import { groupByKind, isEntryVisibleInMonth, summarize, sumUnpaid } from './core/utils/entry.utils';
@@ -45,7 +43,6 @@ import { savedUntil } from './core/utils/saving.utils';
 })
 export class App {
   private readonly walletStorage = inject(WalletStorageService);
-  private readonly swUpdate = inject(SwUpdate, { optional: true });
   private readonly toast = inject(ToastService);
 
   protected readonly Kind = TransactionKind;
@@ -88,15 +85,6 @@ export class App {
         this.toast.error('Não foi possível salvar: armazenamento cheio ou bloqueado');
       }
     });
-
-    this.swUpdate?.versionUpdates
-      .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))
-      .subscribe(() =>
-        this.toast.show('Nova versão disponível.', {
-          duration: null,
-          action: { label: 'Atualizar', run: () => document.location.reload() },
-        }),
-      );
   }
 
   /** Recebe o formulário já validado de um card e grava conforme o tipo. */
