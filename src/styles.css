@@ -13,3 +13,59 @@ button,
 input {
   font: inherit;
 }
+
+.app-form {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.app-form label {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.app-form input {
+  min-width: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #284d52;
+  color: #f4f4f4;
+  padding: 8px 14px;
+  text-align: center;
+  outline: 2px solid transparent;
+}
+
+.app-form input:focus {
+  outline-color: #84dbab;
+}
+
+.app-form label.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.app-form label.check-row input {
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
+  accent-color: #84dbab;
+}
+
+.app-form button {
+  width: min(190px, 100%);
+  justify-self: center;
+  border: 0;
+  border-radius: 999px;
+  background: #84dbab;
+  color: #173036;
+  padding: 8px 20px;
+  font-weight: 800;
+  cursor: pointer;
+}

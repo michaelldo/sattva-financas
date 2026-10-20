@@ -1,0 +1,39 @@
+<form class="app-form" [formGroup]="form" (ngSubmit)="submit()">
+  <label>
+    Descrição:
+    <input
+      type="text"
+      formControlName="description"
+      [maxLength]="maxDescriptionLength"
+      [placeholder]="placeholder()"
+    />
+  </label>
+  <label>
+    R$:
+    <input type="text" formControlName="value" placeholder="0,00" appRealMask />
+  </label>
+
+  @if (allowInstallments()) {
+    @if (form.controls.isInstallment.value) {
+      <label>
+        Parcelas
+        <input
+          type="number"
+          min="1"
+          [max]="maxInstallments"
+          step="1"
+          formControlName="installments"
+        />
+      </label>
+    }
+    <div class="form-actions">
+      <label class="check-row">
+        Parcelado?
+        <input type="checkbox" formControlName="isInstallment" />
+      </label>
+      <button type="submit">Adicionar</button>
+    </div>
+  } @else {
+    <button type="submit">Adicionar</button>
+  }
+</form>

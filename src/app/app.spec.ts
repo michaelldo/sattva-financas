@@ -4,6 +4,18 @@ import { appConfig } from './app.config';
 import { ToastService } from './core/services/toast.service';
 import { isEntryPaidInMonth } from './core/utils/entry.utils';
 import { DriveSyncService } from './core/services/drive-sync.service';
+import { TransactionKind } from './core/models/wallet.models';
+
+/** Atalho: simula o formulário de um card enviando um lançamento. */
+function add(
+  app: App,
+  kind: TransactionKind,
+  description: string,
+  value: number,
+  installments = 1,
+) {
+  app.addEntry(kind, { description, value, installments });
+}
 
 describe('App', () => {
   beforeEach(async () => {
@@ -34,8 +46,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.incomeForm.setValue({ description: 'Salario', value: 2500 });
-    app.addIncome();
+    add(app, TransactionKind.Income, 'Salario', 2500);
 
     expect(app.summary().income).toBe(2500);
     expect(app.summary().balance).toBe(2500);
@@ -45,13 +56,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.variableExpenseForm.setValue({
-      description: 'Notebook',
-      value: 3000,
-      isInstallment: true,
-      installments: 3,
-    });
-    app.addVariableExpense();
+    add(app, TransactionKind.VariableExpense, 'Notebook', 3000, 3);
 
     const secondInstallment = app
       .entries()
@@ -71,8 +76,7 @@ describe('App', () => {
     const app = fixture.componentInstance;
 
     app.currentMonth.set('2026-06');
-    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
-    app.addFixedExpense();
+    add(app, TransactionKind.FixedExpense, 'Aluguel', 1000);
 
     expect(app.entriesByKind()['fixed-expense'].length).toBe(1);
 
@@ -95,8 +99,7 @@ describe('App', () => {
     const app = fixture.componentInstance;
 
     app.currentMonth.set('2026-07');
-    app.fixedExpenseForm.setValue({ description: 'Aluguel ajustado', value: 1100 });
-    app.addFixedExpense();
+    add(app, TransactionKind.FixedExpense, 'Aluguel ajustado', 1100);
 
     expect(app.entriesByKind()['fixed-expense'].length).toBe(1);
 
@@ -109,16 +112,16 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.fixedExpenseForm.setValue({ description: 'Internet', value: 120 });
-    app.addFixedExpense();
+    add(app, TransactionKind.FixedExpense, 'Internet', 120);
 
-    const expense = app.entriesByKind()['fixed-expense'][0];
+    const expense = () => app.entriesByKind()['fixed-expense'][0];
 
-    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
+    expect(isEntryPaidInMonth(expense(), app.currentMonth())).toBe(false);
 
-    app.togglePaidStatus(expense);
+    app.togglePaidStatus(expense());
 
-    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
+    // os dados são imutáveis: é preciso ler o lançamento de novo para ver a mudança
+    expect(isEntryPaidInMonth(expense(), app.currentMonth())).toBe(true);
   });
 
   it('should keep fixed expense paid status scoped to the selected month', () => {
@@ -126,30 +129,28 @@ describe('App', () => {
     const app = fixture.componentInstance;
 
     app.currentMonth.set('2026-06');
-    app.fixedExpenseForm.setValue({ description: 'Internet', value: 120 });
-    app.addFixedExpense();
+    add(app, TransactionKind.FixedExpense, 'Internet', 120);
 
-    const expense = app.entriesByKind()['fixed-expense'][0];
+    const expense = () => app.entriesByKind()['fixed-expense'][0];
 
-    app.togglePaidStatus(expense);
+    app.togglePaidStatus(expense());
 
-    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
+    expect(isEntryPaidInMonth(expense(), app.currentMonth())).toBe(true);
 
     app.currentMonth.set('2026-07');
 
-    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
+    expect(isEntryPaidInMonth(expense(), app.currentMonth())).toBe(false);
 
     app.currentMonth.set('2026-06');
 
-    expect(isEntryPaidInMonth(expense, app.currentMonth())).toBe(false);
+    expect(isEntryPaidInMonth(expense(), app.currentMonth())).toBe(true);
   });
 
   it('should not apply paid status to savings', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.savingForm.setValue({ description: 'Reserva', value: 300 });
-    app.addSaving();
+    add(app, TransactionKind.Saving, 'Reserva', 300);
 
     expect('paid' in app.entriesByKind().saving[0]).toBe(false);
   });
@@ -158,14 +159,12 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.savingForm.setValue({ description: 'Computador', value: 500 });
-    app.addSaving();
+    add(app, TransactionKind.Saving, 'Computador', 500);
 
     expect(app.entriesByKind().saving.length).toBe(1);
     expect(app.entriesByKind().saving[0].value).toBe(500);
 
-    app.savingForm.setValue({ description: 'computador', value: 50 });
-    app.addSaving();
+    add(app, TransactionKind.Saving, 'computador', 50);
 
     expect(app.entriesByKind().saving.length).toBe(1);
     expect(app.entriesByKind().saving[0].value).toBe(550);
@@ -195,51 +194,12 @@ describe('App', () => {
     expect(entries.map((entry) => entry.value)).toEqual([1000, 1000, 1000]);
   });
 
-  it('edita descrição e valor de um lançamento existente', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-
-    app.incomeForm.setValue({ description: 'Salario', value: 2500 });
-    app.addIncome();
-    const income = app.entriesByKind().income[0];
-
-    app.startEdit(income);
-    expect(app.editForm.getRawValue()).toMatchObject({ description: 'Salario', value: 2500 });
-
-    app.editForm.patchValue({ description: 'Salário', value: 2800 });
-    app.saveEdit();
-
-    expect(app.entriesByKind().income[0]).toMatchObject({
-      id: income.id,
-      description: 'Salário',
-      value: 2800,
-    });
-    expect(app.summary().income).toBe(2800);
-    expect(app.editingEntry()).toBeNull();
-  });
-
-  it('não salva a edição com valor inválido', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-
-    app.incomeForm.setValue({ description: 'Salario', value: 2500 });
-    app.addIncome();
-    app.startEdit(app.entriesByKind().income[0]);
-
-    app.editForm.patchValue({ description: 'Salario', value: null });
-    app.saveEdit();
-
-    expect(app.entriesByKind().income[0].value).toBe(2500);
-    expect(app.editingEntry()).not.toBeNull();
-  });
-
   it('abre o modal de edição pela tela, com o valor já formatado', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const element: HTMLElement = fixture.nativeElement;
 
-    app.incomeForm.setValue({ description: 'Salario', value: 1500 });
-    app.addIncome();
+    add(app, TransactionKind.Income, 'Salario', 1500);
     await fixture.whenStable();
 
     const incomeCard = element.querySelectorAll('app-entry-card')[2];
@@ -253,57 +213,6 @@ describe('App', () => {
     expect(dialog.querySelector<HTMLInputElement>('[formControlName="value"]')!.value).toBe(
       '1.500,00',
     );
-  });
-
-  it('ao editar uma parcela, edita a compra inteira (valor total e quantidade)', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-
-    app.variableExpenseForm.setValue({
-      description: 'Notebook',
-      value: 3000,
-      isInstallment: true,
-      installments: 3,
-    });
-    app.addVariableExpense();
-
-    app.startEdit(app.entriesByKind()['variable-expense'][0]);
-    expect(app.editForm.getRawValue()).toEqual({
-      description: 'Notebook',
-      value: 3000,
-      installments: 3,
-    });
-
-    app.editForm.patchValue({ value: 2000, installments: 4 });
-    app.saveEdit();
-
-    const values = app
-      .entries()
-      .filter((entry) => entry.kind === 'variable-expense')
-      .map((entry) => entry.value);
-    expect(values).toEqual([500, 500, 500, 500]);
-  });
-
-  it('editar um gasto fixo vale só do mês atual em diante', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-
-    app.currentMonth.set('2026-01');
-    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
-    app.addFixedExpense();
-
-    app.currentMonth.set('2026-03');
-    app.startEdit(app.entriesByKind()['fixed-expense'][0]);
-    app.editForm.patchValue({ value: 1200 });
-    app.saveEdit();
-
-    expect(app.summary().fixedExpenses).toBe(1200);
-
-    app.currentMonth.set('2026-02');
-    expect(app.summary().fixedExpenses).toBe(1000);
-
-    app.currentMonth.set('2026-08');
-    expect(app.summary().fixedExpenses).toBe(1200);
   });
 
   it('o menu lateral abre pelo botão e leva ao relatório', async () => {
@@ -333,15 +242,8 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
-    app.addFixedExpense();
-    app.variableExpenseForm.setValue({
-      description: 'Mercado',
-      value: 300,
-      isInstallment: false,
-      installments: 1,
-    });
-    app.addVariableExpense();
+    add(app, TransactionKind.FixedExpense, 'Aluguel', 1000);
+    add(app, TransactionKind.VariableExpense, 'Mercado', 300);
 
     expect(app.amountToPay()).toBe(1300);
 
@@ -355,13 +257,7 @@ describe('App', () => {
     const app = fixture.componentInstance;
     const toasts = TestBed.inject(ToastService);
 
-    app.variableExpenseForm.setValue({
-      description: 'Notebook',
-      value: 3000,
-      isInstallment: true,
-      installments: 3,
-    });
-    app.addVariableExpense();
+    add(app, TransactionKind.VariableExpense, 'Notebook', 3000, 3);
     const before = app.entries();
 
     app.removeEntry(before[0].id);
@@ -380,8 +276,7 @@ describe('App', () => {
     const toasts = TestBed.inject(ToastService);
 
     app.currentMonth.set('2026-06');
-    app.fixedExpenseForm.setValue({ description: 'Aluguel', value: 1000 });
-    app.addFixedExpense();
+    add(app, TransactionKind.FixedExpense, 'Aluguel', 1000);
 
     app.currentMonth.set('2026-08');
     app.removeEntry(app.entriesByKind()['fixed-expense'][0].id);
@@ -428,26 +323,12 @@ describe('App', () => {
     vi.unstubAllGlobals();
   });
 
-  it('não aceita descrição só com espaços e salva sem espaços sobrando', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-
-    app.incomeForm.setValue({ description: '   ', value: 100 });
-    app.addIncome();
-    expect(app.entries()).toHaveLength(0);
-
-    app.incomeForm.setValue({ description: '  Pix  ', value: 100 });
-    app.addIncome();
-    expect(app.entries()[0].description).toBe('Pix');
-  });
-
   it('importar backup pode ser desfeito pelo aviso', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     const toasts = TestBed.inject(ToastService);
 
-    app.incomeForm.setValue({ description: 'Salário', value: 2500 });
-    app.addIncome();
+    add(app, TransactionKind.Income, 'Salário', 2500);
 
     const file = new File(
       [

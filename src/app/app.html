@@ -37,12 +37,12 @@
           Saídas
         </span>
         <strong>{{
-            summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
-          }}</strong>
+          summary().fixedExpenses + summary().variableExpenses + summary().savings | currency
+        }}</strong>
         @if (summary().fixedExpenses + summary().variableExpenses > 0) {
           @if (amountToPay() > 0) {
             <small class="metric__hint is-pending"
-            >Falta pagar: {{ amountToPay() | currency }}</small
+              >Falta pagar: {{ amountToPay() | currency }}</small
             >
           } @else {
             <small class="metric__hint is-done">Tudo pago ✓</small>
@@ -73,44 +73,15 @@
       [remaining]="installmentsRemaining()"
       [month]="currentMonth()"
       [showPaidStatus]="true"
-      (edit)="startEdit($event)"
+      (edit)="editingEntry.set($event)"
       (remove)="removeEntry($event)"
       (togglePaid)="togglePaidStatus($event)"
     >
-      <form [formGroup]="variableExpenseForm" (ngSubmit)="addVariableExpense()">
-        <label
-        >Descrição:
-          <input
-            type="text"
-            formControlName="description"
-            [maxLength]="maxDescriptionLength"
-            placeholder="Mercado"
-          />
-        </label>
-        <label>
-          R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
-        </label>
-        @if (variableExpenseForm.controls.isInstallment.value) {
-          <label>
-            Parcelas
-            <input
-              type="number"
-              min="1"
-              [max]="maxInstallments"
-              step="1"
-              formControlName="installments"
-            />
-          </label>
-        }
-        <div class="form-actions">
-          <label class="check-row">
-            Parcelado?
-            <input type="checkbox" formControlName="isInstallment" />
-          </label>
-          <button type="submit">Adicionar</button>
-        </div>
-      </form>
+      <app-entry-form
+        placeholder="Mercado"
+        [allowInstallments]="true"
+        (submitted)="addEntry(Kind.VariableExpense, $event)"
+      />
     </app-entry-card>
 
     <app-entry-card
@@ -119,26 +90,11 @@
       [entries]="entriesByKind()[Kind.FixedExpense]"
       [month]="currentMonth()"
       [showPaidStatus]="true"
-      (edit)="startEdit($event)"
+      (edit)="editingEntry.set($event)"
       (remove)="removeEntry($event)"
       (togglePaid)="togglePaidStatus($event)"
     >
-      <form [formGroup]="fixedExpenseForm" (ngSubmit)="addFixedExpense()">
-        <label>
-          Descrição:
-          <input
-            type="text"
-            formControlName="description"
-            [maxLength]="maxDescriptionLength"
-            placeholder="Internet"
-          />
-        </label>
-        <label>
-          R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
-        </label>
-        <button type="submit">Adicionar</button>
-      </form>
+      <app-entry-form placeholder="Internet" (submitted)="addEntry(Kind.FixedExpense, $event)" />
     </app-entry-card>
 
     <app-entry-card
@@ -146,25 +102,10 @@
       itemLabel="renda"
       [entries]="entriesByKind()[Kind.Income]"
       [month]="currentMonth()"
-      (edit)="startEdit($event)"
+      (edit)="editingEntry.set($event)"
       (remove)="removeEntry($event)"
     >
-      <form [formGroup]="incomeForm" (ngSubmit)="addIncome()">
-        <label>
-          Descrição:
-          <input
-            type="text"
-            formControlName="description"
-            [maxLength]="maxDescriptionLength"
-            placeholder="Salário"
-          />
-        </label>
-        <label>
-          R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
-        </label>
-        <button type="submit">Adicionar</button>
-      </form>
+      <app-entry-form placeholder="Salário" (submitted)="addEntry(Kind.Income, $event)" />
     </app-entry-card>
   </section>
 
@@ -200,25 +141,10 @@
       variant="dark"
       [entries]="entriesByKind()[Kind.Saving]"
       [month]="currentMonth()"
-      (edit)="startEdit($event)"
+      (edit)="editingEntry.set($event)"
       (remove)="removeEntry($event)"
     >
-      <form [formGroup]="savingForm" (ngSubmit)="addSaving()">
-        <label>
-          Descrição:
-          <input
-            type="text"
-            formControlName="description"
-            placeholder="Viagem"
-            [maxLength]="maxDescriptionLength"
-          />
-        </label>
-        <label>
-          R$:
-          <input type="text" formControlName="value" placeholder="0,00" appRealMask />
-        </label>
-        <button type="submit">Adicionar</button>
-      </form>
+      <app-entry-form placeholder="Viagem" (submitted)="addEntry(Kind.Saving, $event)" />
     </app-entry-card>
   </section>
 
@@ -314,48 +240,12 @@
     />
   }
 
-  <app-modal
-    heading="Editar lançamento"
-    [open]="editingEntry() !== null"
-    (openChange)="onEditModalChange($event)"
-  >
-    <form class="modal-content edit-form" [formGroup]="editForm" (ngSubmit)="saveEdit()">
-      <label>
-        Descrição
-        <input type="text" formControlName="description" [maxLength]="maxDescriptionLength" />
-      </label>
-      <label>
-        {{ editingInstallment() ? 'Valor total' : 'R$' }}
-        <input type="text" formControlName="value" appRealMask />
-      </label>
-
-      @if (editingInstallment()) {
-        <label>
-          Parcelas
-          <input
-            type="number"
-            min="1"
-            step="1"
-            [max]="maxInstallments"
-            formControlName="installments"
-          />
-        </label>
-        <p class="edit-hint">As parcelas serão recalculadas a partir do valor total.</p>
-      }
-
-      @if (editingEntry()?.kind === Kind.FixedExpense) {
-        <p class="edit-hint">
-          A alteração vale a partir de
-          <strong> {{ currentMonth() + '-01' | date: 'MMMM y' }}</strong
-          >. Os meses anteriores continuarão com os dados antigos.
-        </p>
-      }
-
-      <div class="edit-actions">
-        <button type="button" class="secondary" (click)="editingEntry.set(null)">Cancelar</button>
-        <button type="submit">Salvar</button>
-      </div>
-    </form>
-  </app-modal>
+  @if (editingEntry(); as entry) {
+    <app-edit-entry-dialog
+      [entry]="entry"
+      [month]="currentMonth()"
+      (closed)="editingEntry.set(null)"
+    />
+  }
   <app-toast-container />
 </main>
