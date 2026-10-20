@@ -1,0 +1,26 @@
+:host {
+  display: contents;
+}
+
+form {
+  flex: 1;
+  margin-top: 24px;
+}
+
+form > button {
+  margin-top: auto;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+}
+
+.form-actions button {
+  flex: 1 1 130px;
+  width: auto;
+}

@@ -1,8 +1,9 @@
 import { InstallmentInfo, TransactionKind, WalletEntry } from '../models/wallet.models';
-import { getCurrentMonth } from './month.utils';
-import { createId } from '../../id-generator';
+import { getCurrentMonth, isMonthKey, MonthKey } from './month.utils';
+import { createId } from './id-generator';
 
-const TRANSACTION_KINDS = ['income', 'saving', 'fixed-expense', 'variable-expense'];
+const TRANSACTION_KIND: readonly string[] = Object.values(TransactionKind);
+export const MAX_DESCRIPTION_LENGTH = 120;
 
 type RawRecord = Record<string, unknown>;
 
@@ -11,11 +12,46 @@ export function isRecord(value: unknown): value is RawRecord {
 }
 
 function isTransactionKind(value: unknown): value is TransactionKind {
-  return TRANSACTION_KINDS.includes(value as TransactionKind);
+  return typeof value === 'string' && TRANSACTION_KIND.includes(value);
 }
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === 'string' && value ? value : undefined;
+}
+
+function parseMonth(value: unknown): MonthKey | undefined {
+  return isMonthKey(value) ? value : undefined;
+}
+
+/** Só aceita chaves com meses válidos */
+function parsePaidMonths(value: unknown): Record<MonthKey, boolean> {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([month, paid]) => isMonthKey(month) && paid === true)
+      .map(([month]) => [month, true]),
+  );
+}
+
+function parseDeposits(value: unknown): Record<MonthKey, number> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const deposits = Object.fromEntries(
+    Object.entries(value)
+      .filter(([month, amount]) => isMonthKey(month) && typeof amount === 'number' && amount > 0)
+      .map(([month, amount]) => [month, Math.round((amount as number) * 100) / 100]),
+  );
+
+  return Object.keys(deposits).length > 0 ? deposits : undefined;
+}
+
+function parseDescription(value: unknown): string {
+  return typeof value === 'string' ? value.trim().slice(0, MAX_DESCRIPTION_LENGTH) : '';
 }
 
 function parseInstallment(value: unknown): InstallmentInfo | undefined {
@@ -40,34 +76,44 @@ export function parseWalletEntry(raw: unknown): WalletEntry {
     throw new Error('Lançamento com valor inválido.');
   }
 
-  const month = optionalString(raw['month']) ?? getCurrentMonth();
+  const month = parseMonth(raw['month']) ?? getCurrentMonth();
   const base = {
     id: optionalString(raw['id']) ?? createId(),
-    description: String(raw['description'] ?? ''),
-    value,
+    description: parseDescription(raw['description']),
+    value: Math.round(value * 100) / 100,
     month,
     createdAt: optionalString(raw['createdAt']) ?? new Date().toISOString(),
   };
 
-  const kind = isTransactionKind(raw['kind']) ? raw['kind'] : 'variable-expense';
+  const kind = isTransactionKind(raw['kind']) ? raw['kind'] : TransactionKind.VariableExpense;
 
   switch (kind) {
-    case 'income':
+    case TransactionKind.Income:
       return { ...base, kind };
-    case 'saving':
-      return { ...base, kind };
-    case 'fixed-expense':
+    case TransactionKind.Saving: {
+      const deposits = parseDeposits(raw['deposits']) ?? { [month]: base.value };
+      const months = Object.keys(deposits).sort();
+      return {
+        ...base,
+        kind,
+        deposits,
+        value: Object.values(deposits).reduce((sum, v) => sum + Math.round(v * 100), 0) / 100,
+        month: months[0],
+        deletedFromMonth: parseMonth(raw['deletedFromMonth']),
+      };
+    }
+    case TransactionKind.FixedExpense:
       return {
         ...base,
         kind,
         paidMonths: isRecord(raw['paidMonths'])
-          ? (raw['paidMonths'] as Record<string, boolean>)
+          ? parsePaidMonths(raw['paidMonths'])
           : raw['paid']
             ? { [month]: true }
             : {},
-        deletedFromMonth: optionalString(raw['deletedFromMonth']),
+        deletedFromMonth: parseMonth(raw['deletedFromMonth']),
       };
-    case 'variable-expense':
+    case TransactionKind.VariableExpense:
       return {
         ...base,
         kind,
@@ -75,4 +121,15 @@ export function parseWalletEntry(raw: unknown): WalletEntry {
         installment: parseInstallment(raw['installment']),
       };
   }
+}
+
+/** Garante ids únicos */
+export function withUniqueIds(entries: readonly WalletEntry[]): WalletEntry[] {
+  const seen = new Set<string>();
+
+  return entries.map((entry) => {
+    const unique = seen.has(entry.id) ? { ...entry, id: createId() } : entry;
+    seen.add(unique.id);
+    return unique;
+  });
 }

@@ -76,4 +76,16 @@ describe('Modal', () => {
 
     expect(element.querySelector(`#${titleId}`)?.textContent).toContain('Ajuda');
   });
+
+  it('variant="drawer" aplica o visual de painel lateral', async () => {
+    expect(dialog.classList.contains('drawer')).toBe(false);
+
+    const drawerFixture = TestBed.createComponent(Modal);
+    drawerFixture.componentRef.setInput('heading', 'Menu');
+    drawerFixture.componentRef.setInput('variant', 'drawer');
+    await drawerFixture.whenStable();
+
+    const drawer = (drawerFixture.nativeElement as HTMLElement).querySelector('dialog')!;
+    expect(drawer.classList.contains('drawer')).toBe(true);
+  });
 });

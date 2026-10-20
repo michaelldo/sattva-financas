@@ -20,6 +20,7 @@ export class Modal {
   readonly heading = input.required<string>();
   readonly wide = input(false);
   readonly open = model(false);
+  readonly variant = input<'dialog' | 'drawer'>('dialog');
 
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 

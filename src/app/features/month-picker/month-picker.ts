@@ -4,12 +4,14 @@ import {
   computed,
   ElementRef,
   inject,
+  input,
   linkedSignal,
   model,
   signal,
 } from '@angular/core';
 import {
   formatMonthLabel,
+  getCurrentMonth,
   MonthKey,
   monthKeyToDate,
   toMonthKey,
@@ -36,8 +38,10 @@ export class MonthPicker {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly month = model.required<MonthKey>();
+  readonly align = input<'center' | 'start'>('center');
   readonly isOpen = signal(false);
   readonly viewedYear = linkedSignal(() => monthKeyToDate(this.month()).getFullYear());
+  protected readonly today = getCurrentMonth();
   readonly label = computed(() => formatMonthLabel(this.month()));
   readonly options = computed<MonthOption[]>(() =>
     Array.from({ length: 12 }, (_, index) => {

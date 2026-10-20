@@ -72,6 +72,19 @@ h1 {
   line-height: 1;
 }
 
+.metric__hint {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.metric__hint.is-pending {
+  color: #f5c26b;
+}
+
+.metric__hint.is-done {
+  color: #84dbab;
+}
+
 .metric--balance {
   min-height: 112px;
   justify-content: center;
@@ -98,90 +111,12 @@ h1 {
   font-weight: 700;
 }
 
-form input {
-  min-width: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #284d52;
-  color: #f4f4f4;
-  padding: 8px 14px;
-  text-align: center;
-  outline: 2px solid transparent;
-}
-
-form input:focus {
-  outline-color: #84dbab;
-}
-
 .entry-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 92px;
+  gap: clamp(28px, 5vw, 92px);
   margin-bottom: 72px;
   align-items: start;
-}
-
-form {
-  display: grid;
-  gap: 14px;
-  margin-top: 24px;
-  flex: 1;
-  align-content: start;
-}
-
-form label {
-  display: grid;
-  grid-template-columns: 92px 1fr;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.95rem;
-}
-
-form label.check-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: inherit;
-  cursor: pointer;
-}
-
-form label.check-row input {
-  min-width: 18px;
-  width: 18px;
-  height: 18px;
-  accent-color: #84dbab;
-}
-
-.form-actions {
-  display: grid;
-  grid-template-columns: 1fr minmax(130px, 190px);
-  align-items: center;
-  gap: 14px;
-  margin-top: auto;
-}
-
-form button {
-  width: min(190px, 100%);
-  justify-self: center;
-  border: 0;
-  border-radius: 999px;
-  background: #84dbab;
-  color: #173036;
-  padding: 8px 20px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-form > button {
-  margin-top: auto;
-}
-
-.form-actions button {
-  width: 100%;
-}
-
-.saving-card .entry-list li {
-  border-top-color: rgb(244 244 244 / 12%);
 }
 
 .lower-grid {
@@ -239,123 +174,22 @@ dd {
   font-size: 1.55rem;
 }
 
-.app-footer {
-  margin-top: 48px;
-  color: #84dbab;
-  text-align: center;
-  font-size: 0.85rem;
-}
-
-.footer-actions {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.footer-actions button,
-.import-button,
-.report-actions button {
+.menu-button {
+  position: absolute;
+  z-index: 5;
+  top: 16px;
+  left: 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 34px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 999px;
   background: #284d52;
   color: #f4f4f4;
-  padding: 8px 14px;
-  font-weight: 800;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 30%);
   cursor: pointer;
-}
-
-.footer-actions button:hover,
-.import-button:hover,
-.report-actions button:hover {
-  background: #84dbab;
-  color: #173036;
-}
-
-.import-button input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.import-message {
-  margin: 0 0 10px;
-  color: #f4f4f4;
-}
-
-.edit-hint {
-  margin: 0;
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
-.edit-form {
-  margin-top: 0;
-}
-
-.edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.edit-actions button {
-  width: auto;
-}
-
-.edit-actions .secondary {
-  background: transparent;
-  color: inherit;
-  box-shadow: inset 0 0 0 1px currentColor;
-}
-
-.modal-content {
-  display: grid;
-  gap: 14px;
-  padding: 22px;
-  text-align: left;
-}
-
-.modal-content p,
-.modal-content ol {
-  margin: 0;
-}
-
-.modal-content ol {
-  padding-left: 22px;
-}
-
-.report-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 16px 18px 0;
-}
-
-.report-text {
-  width: calc(100% - 36px);
-  min-height: 430px;
-  margin: 16px 18px 18px;
-  resize: vertical;
-  border: 1px solid rgb(20 29 35 / 16%);
-  border-radius: 14px;
-  background: #ffffff;
-  color: #141d23;
-  padding: 16px;
-  font: 0.95rem/1.55 Consolas,
-  'Courier New',
-  monospace;
-}
-
-.print-report {
-  display: none;
 }
 
 @media (max-width: 980px) {
@@ -460,21 +294,12 @@ dd {
   .month-filter,
   .entry-grid,
   .lower-grid,
-  .app-footer{
+  .menu-button {
     display: none !important;
   }
 
   .wallet-shell {
     width: 100%;
     padding: 0;
-  }
-
-  .print-report {
-    display: block;
-    color: #000000;
-    white-space: pre-wrap;
-    font: 12pt/1.45 Consolas,
-    'Courier New',
-    monospace;
   }
 }

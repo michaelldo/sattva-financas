@@ -1,5 +1,5 @@
 import { FixedExpenseEntry, VariableExpenseEntry, WalletEntry } from '../models/wallet.models';
-import { editFixedFromMonth, editInstallmentGroup } from './entry-edit';
+import { editFixedFromMonth, editInstallmentGroup, restoreEntries } from './entry-edit';
 import { buildInstallments } from './installments';
 import { createEntry } from './entry.utils';
 
@@ -108,5 +108,26 @@ describe('editInstallmentGroup', () => {
     });
 
     expect(result).toContainEqual(other);
+  });
+
+  describe('restoreEntries', () => {
+    const month = '2026-10';
+    const market = createEntry({
+      kind: 'variable-expense',
+      description: 'Mercado',
+      value: 300,
+      month,
+    });
+    const rent = createEntry({ kind: 'fixed-expense', description: 'Aluguel', value: 1000, month });
+
+    it('devolve um lançamento que foi removido', () => {
+      expect(restoreEntries([rent], [market])).toEqual([rent, market]);
+    });
+
+    it('volta à versão original um lançamento que foi alterado', () => {
+      const closed = { ...rent, deletedFromMonth: '2026-11' };
+
+      expect(restoreEntries([closed, market], [rent])).toEqual([rent, market]);
+    });
   });
 });

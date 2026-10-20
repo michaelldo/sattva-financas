@@ -1,10 +1,11 @@
-import { createId } from '../../id-generator';
+import { createId } from './id-generator';
 import { MonthKey } from './month.utils';
 import {
   EntriesByKind,
   InstallmentInfo,
   TransactionKind,
   WalletEntry,
+  WalletSummary,
 } from '../models/wallet.models';
 
 export interface NewEntryData {
@@ -25,14 +26,19 @@ export function createEntry(data: NewEntryData, now: Date = new Date()): WalletE
   };
 
   switch (data.kind) {
-    case 'income':
-      return { ...base, kind: 'income' };
-    case 'saving':
-      return { ...base, kind: 'saving' };
-    case 'fixed-expense':
-      return { ...base, kind: 'fixed-expense', paidMonths: {} };
-    case 'variable-expense':
-      return { ...base, kind: 'variable-expense', paid: false, installment: data.installment };
+    case TransactionKind.Income:
+      return { ...base, kind: TransactionKind.Income };
+    case TransactionKind.Saving:
+      return { ...base, kind: TransactionKind.Saving, deposits: { [data.month]: data.value } };
+    case TransactionKind.FixedExpense:
+      return { ...base, kind: TransactionKind.FixedExpense, paidMonths: {} };
+    case TransactionKind.VariableExpense:
+      return {
+        ...base,
+        kind: TransactionKind.VariableExpense,
+        paid: false,
+        installment: data.installment,
+      };
     default:
       assertNever(data.kind);
   }
@@ -40,9 +46,9 @@ export function createEntry(data: NewEntryData, now: Date = new Date()): WalletE
 
 export function isEntryPaidInMonth(entry: WalletEntry, month: MonthKey): boolean {
   switch (entry.kind) {
-    case 'fixed-expense':
+    case TransactionKind.FixedExpense:
       return Boolean(entry.paidMonths[month]);
-    case 'variable-expense':
+    case TransactionKind.VariableExpense:
       return entry.paid;
     default:
       return false;
@@ -51,10 +57,10 @@ export function isEntryPaidInMonth(entry: WalletEntry, month: MonthKey): boolean
 
 export function groupByKind(entries: readonly WalletEntry[]): EntriesByKind {
   const groups: EntriesByKind = {
-    income: [],
-    'fixed-expense': [],
-    'variable-expense': [],
-    saving: [],
+    [TransactionKind.Income]: [],
+    [TransactionKind.FixedExpense]: [],
+    [TransactionKind.VariableExpense]: [],
+    [TransactionKind.Saving]: [],
   };
 
   for (const entry of entries) {
@@ -70,6 +76,53 @@ export function sumValues(entries: readonly WalletEntry[]): number {
   return entries.reduce((sum, entry) => sum + entry.value, 0);
 }
 
+export function sumUnpaid(entries: readonly WalletEntry[], month: MonthKey): number {
+  return sumValues(
+    entries.filter(
+      (entry) =>
+        (entry.kind === TransactionKind.FixedExpense ||
+          entry.kind === TransactionKind.VariableExpense) &&
+        !isEntryPaidInMonth(entry, month),
+    ),
+  );
+}
+
 export function assertNever(valeu: never): never {
   throw new Error(`Tipo de lançamento não tratado: ${String(valeu)}`);
+}
+
+export function isEntryVisibleInMonth(entry: WalletEntry, month: MonthKey): boolean {
+  if (entry.kind !== TransactionKind.FixedExpense && entry.kind !== TransactionKind.Saving) {
+    return entry.month === month;
+  }
+
+  return entry.month <= month && (!entry.deletedFromMonth || month < entry.deletedFromMonth);
+}
+
+export function summarize(groups: EntriesByKind, month: MonthKey): WalletSummary {
+  const income = sumValues(groups[TransactionKind.Income]);
+  const fixedExpenses = sumValues(groups[TransactionKind.FixedExpense]);
+  const variableExpenses = sumValues(groups[TransactionKind.VariableExpense]);
+  const savings = groups[TransactionKind.Saving].reduce(
+    (sum, entry) => sum + (entry.deposits[month] ?? 0),
+    0,
+  );
+
+  return {
+    income,
+    fixedExpenses,
+    variableExpenses,
+    savings,
+    balance: income - fixedExpenses - variableExpenses - savings,
+  };
+}
+
+/** "Viagem", " viagem " e "Viágem!" viram "viagem": usado para somar cofrinhos de mesmo nome. */
+export function normalizeDescription(description: string): string {
+  return description
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s]/gi, '')
+    .toLowerCase()
+    .trim();
 }

@@ -1,23 +1,42 @@
-import { Injectable, signal } from '@angular/core';
-import { WalletEntry } from '../models/wallet.models';
+import { DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { TransactionKind, WalletEntry } from '../models/wallet.models';
 import { getCurrentMonth } from '../utils/month.utils';
-import { createId } from '../../id-generator';
+import { createId } from '../utils/id-generator';
 import { createEntry, NewEntryData } from '../utils/entry.utils';
-import { parseWalletEntry } from '../utils/entry-parser';
+import { parseWalletEntry, withUniqueIds } from '../utils/entry-parser';
 import {
-  EntryChanges,
   editFixedFromMonth,
   editInstallmentGroup,
+  EntryChanges,
   InstallmentChanges,
+  restoreEntries,
 } from '../utils/entry-edit';
+import { addDeposit, editSavingMonth, mergeSavingGoals } from '../utils/saving.utils';
 
 const STORAGE_KEY = 'sattva-wallet-entries-v1';
+const MODIFIED_AT_KEY = 'sattva-wallet-modified-at';
 
 @Injectable({ providedIn: 'root' })
 export class WalletStorageService {
   private readonly entriesSignal = signal<WalletEntry[]>(this.readEntries());
+  private readonly lastModifiedSignal = signal<string>(this.readModifiedAt());
+  private readonly saveFailedSignal = signal(false);
 
   readonly entries = this.entriesSignal.asReadonly();
+  readonly lastModified = this.lastModifiedSignal.asReadonly();
+  readonly saveFailed = this.saveFailedSignal.asReadonly();
+
+  constructor() {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === STORAGE_KEY || event.key === MODIFIED_AT_KEY) {
+        this.entriesSignal.set(this.readEntries());
+        this.lastModifiedSignal.set(this.readModifiedAt());
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('storage', onStorage));
+  }
 
   add(data: NewEntryData): void {
     this.save([...this.entriesSignal(), createEntry(data)]);
@@ -28,20 +47,12 @@ export class WalletStorageService {
     this.save([...this.entriesSignal(), ...items.map((data) => createEntry(data, now))]);
   }
 
-  addOrUpdateSaving(entry: NewEntryData): void {
-    const normalizedDescription = this.normalizeDescription(entry.description);
-    const existingEntry = this.entriesSignal().find(
-      (e) =>
-        e.kind === 'saving' &&
-        e.month === entry.month &&
-        this.normalizeDescription(e.description) === normalizedDescription,
-    );
+  addOrUpdateSaving(data: NewEntryData): void {
+    this.save(addDeposit(this.entriesSignal(), data));
+  }
 
-    if (existingEntry) {
-      this.update(existingEntry.id, { value: existingEntry.value + entry.value });
-    } else {
-      this.add(entry);
-    }
+  editSavingMonth(id: string, month: string, changes: EntryChanges): void {
+    this.save(editSavingMonth(this.entriesSignal(), id, month, changes));
   }
 
   update(id: string, changes: Partial<Pick<WalletEntry, 'description' | 'value'>>): void {
@@ -56,35 +67,38 @@ export class WalletStorageService {
     this.save(editInstallmentGroup(this.entriesSignal(), groupId, changes));
   }
 
-  private normalizeDescription(description: string): string {
-    return description
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^\w\s]/gi, '')
-      .toLowerCase()
-      .trim();
-  }
-
-  remove(id: string, month: string): void {
+  /**
+   * Remove um lançamento e permite voltar a versão original do lançamento
+   */
+  remove(id: string, month: string): WalletEntry[] {
     const entries = this.entriesSignal();
     const entryToRemove = entries.find((entry) => entry.id === id);
 
     if (!entryToRemove) {
-      return;
+      return [];
     }
 
-    if (entryToRemove.kind === 'fixed-expense') {
+    if (
+      entryToRemove.kind === TransactionKind.FixedExpense ||
+      entryToRemove.kind === TransactionKind.Saving
+    ) {
       this.save(
         entries.map((entry) =>
-          entry.id === id && entry.kind === 'fixed-expense'
-            ? { ...entry, deletedFromMonth: month }
-            : entry,
+          entry.id === id ? { ...entryToRemove, deletedFromMonth: month } : entry,
         ),
       );
-      return;
+      return [entryToRemove];
     }
+    const removed = entries.filter((entry) => this.shouldRemoveEntry(entry, entryToRemove));
+    this.save(entries.filter((entry) => !removed.includes(entry)));
+    return removed;
+  }
 
-    this.save(entries.filter((entry) => !this.shouldRemoveEntry(entry, entryToRemove)));
+  /**
+   * Desfaz uma remoção de lançamento
+   */
+  restore(originals: readonly WalletEntry[]): void {
+    this.save(restoreEntries(this.entriesSignal(), originals));
   }
 
   togglePaid(id: string, month: string): void {
@@ -95,12 +109,12 @@ export class WalletStorageService {
         }
 
         switch (entry.kind) {
-          case 'fixed-expense':
+          case TransactionKind.FixedExpense:
             return {
               ...entry,
               paidMonths: { ...entry.paidMonths, [month]: !entry.paidMonths[month] },
             };
-          case 'variable-expense':
+          case TransactionKind.VariableExpense:
             return { ...entry, paid: !entry.paid };
           default:
             return entry; // renda e cofrinho não têm status de pago
@@ -109,17 +123,34 @@ export class WalletStorageService {
     );
   }
 
-  clearAll(): void {
-    this.save([]);
+  /**
+   * Substitui todos os lançamentos e permite manter a data original
+   * quando os dados vem do google drive
+   */
+  replaceAll(entries: WalletEntry[], modifiedAt?: string): void {
+    this.save(entries, modifiedAt);
   }
 
-  replaceAll(entries: WalletEntry[]): void {
-    this.save(entries);
-  }
-
-  private save(entries: WalletEntry[]): void {
+  private save(entries: WalletEntry[], modifiedAt = new Date().toISOString()): void {
     this.entriesSignal.set(entries);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    this.lastModifiedSignal.set(modifiedAt);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(MODIFIED_AT_KEY, modifiedAt);
+      this.saveFailedSignal.set(false);
+    } catch {
+      this.saveFailedSignal.set(true); //Caso retorne erro os dados ficam só na memória
+    }
+  }
+
+  private readModifiedAt(): string {
+    const stored = localStorage.getItem(MODIFIED_AT_KEY);
+    if (stored) {
+      return stored;
+    }
+    //Dados de antes desta versão: se existe algo salvo, consideramos "agora".
+    return this.entriesSignal().length > 0 ? new Date().toISOString() : new Date(0).toISOString();
   }
 
   private readEntries(): WalletEntry[] {
@@ -140,13 +171,17 @@ export class WalletStorageService {
       return [];
     }
 
-    return stored.flatMap((raw) => {
-      try {
-        return [parseWalletEntry(raw)];
-      } catch {
-        return [];
-      }
-    });
+    return mergeSavingGoals(
+      withUniqueIds(
+        stored.flatMap((raw) => {
+          try {
+            return [parseWalletEntry(raw)];
+          } catch {
+            return [];
+          }
+        }),
+      ),
+    );
   }
 
   private shouldRemoveEntry(entry: WalletEntry, entryToRemove: WalletEntry): boolean {
@@ -154,11 +189,11 @@ export class WalletStorageService {
       return true;
     }
 
-    if (entryToRemove.kind === 'variable-expense' && entryToRemove.installment) {
+    if (entryToRemove.kind === TransactionKind.VariableExpense && entryToRemove.installment) {
       const removed = entryToRemove.installment;
 
       return (
-        entry.kind === 'variable-expense' &&
+        entry.kind === TransactionKind.VariableExpense &&
         entry.installment?.groupId === removed.groupId &&
         entry.installment.current >= removed.current
       );
@@ -206,7 +241,7 @@ export class WalletStorageService {
     const migratedEntries: WalletEntry[] = [
       ...legacyIncome.map((entry) => ({
         id: createId(),
-        kind: 'income' as const,
+        kind: TransactionKind.Income,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
         month: String(entry['mes'] ?? currentMonth),
@@ -214,7 +249,7 @@ export class WalletStorageService {
       })),
       ...legacyFixedExpenses.map((entry) => ({
         id: createId(),
-        kind: 'fixed-expense' as const,
+        kind: TransactionKind.FixedExpense,
         description: String(entry['nome'] ?? ''),
         value: Number(entry['valor'] ?? 0),
         month: currentMonth,
@@ -227,7 +262,7 @@ export class WalletStorageService {
 
         return {
           id: createId(),
-          kind: 'variable-expense' as const,
+          kind: TransactionKind.VariableExpense,
           description,
           value: Number(entry['valor'] ?? 0),
           month: String(entry['mes'] ?? currentMonth),
@@ -251,7 +286,7 @@ export class WalletStorageService {
     return migratedEntries;
   }
 
-  private readLegacyList(key: string): Array<Record<string, unknown>> {
+  private readLegacyList(key: string): Record<string, unknown>[] {
     const rawValue = localStorage.getItem(key);
 
     if (!rawValue) {

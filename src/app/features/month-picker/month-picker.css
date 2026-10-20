@@ -11,7 +11,7 @@ button {
 
 .month-trigger {
   display: inline-flex;
-  min-width: 220px;
+  min-width: var(--month-picker-width, 220px);
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -19,15 +19,50 @@ button {
   background: #284d52;
   color: #f4f4f4;
   padding: 8px 16px;
-  text-transform: capitalize;
+  transition: box-shadow 0.2s;
+}
+
+.month-trigger:hover,
+.month-trigger[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px rgb(132 219 171 / 35%);
+}
+
+.month-trigger:focus-visible {
+  outline: 2px solid #84dbab;
+  outline-offset: 3px;
+}
+
+.month-label {
+  display: inline-block;
+}
+
+.month-label::first-letter {
+  text-transform: uppercase;
 }
 
 .chevron {
-  transition: transform 0.2s;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgb(132 219 171 / 16%);
+  color: #84dbab;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.month-trigger:hover .chevron {
+  background: rgb(132 219 171 / 30%);
 }
 
 .chevron.open {
   transform: rotate(180deg);
+  background: #84dbab;
+  color: #173036;
 }
 
 .month-panel {
@@ -36,12 +71,29 @@ button {
   top: calc(100% + 10px);
   left: 50%;
   width: min(320px, calc(100vw - 32px));
-  transform: translateX(-50%);
+  translate: -50% 0;
+  transform-origin: top center;
+  animation: panel-in 0.18s ease-out;
   padding: 16px;
   border: 1px solid rgb(132 219 171 / 40%);
   border-radius: 18px;
   background: #141d23;
   box-shadow: 0 14px 26px rgb(0 0 0 / 35%);
+  color: #f4f4f4;
+}
+
+.month-panel--start {
+  left: 0;
+  width: min(300px, calc(100vw - 96px));
+  translate: none;
+  transform-origin: top left;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
 }
 
 .month-panel__header {
@@ -52,17 +104,23 @@ button {
 }
 
 .month-panel__header button {
+  display: inline-grid;
+  place-items: center;
   width: 34px;
   height: 34px;
   border-radius: 999px;
   background: #2b3b4a;
   color: #84dbab;
-  font-weight: 800;
+  transition: background-color 0.2s;
+}
+
+.month-panel__header button:hover {
+  background: #35495c;
 }
 
 .month-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2px;
 }
 
@@ -70,12 +128,30 @@ button {
   border-radius: 999px;
   background: #284d52;
   color: #f4f4f4;
-  padding: 8px 10px;
+  padding: 8px 4px;
   text-transform: capitalize;
+  transition: background-color 0.15s;
+}
+
+.month-grid button:hover:not(.is-selected) {
+  background: #32636a;
+}
+
+/* Mês de hoje: contorno discreto (se não for o selecionado) */
+.month-grid button.is-today:not(.is-selected) {
+  box-shadow: inset 0 0 0 2px rgb(132 219 171 / 55%);
 }
 
 .month-grid button.is-selected {
   background: #84dbab;
   color: #173036;
   font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron,
+  .month-panel {
+    transition: none;
+    animation: none;
+  }
 }
