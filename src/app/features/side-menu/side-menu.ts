@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { WalletStorageService } from '../../core/services/wallet-storage.service';
 import { SyncAction } from '../../core/utils/sync.utils';
 import { Modal } from '../../shared/components/modal/modal';
+import { InstallService } from '../../core/services/install.service';
 
 const SYNC_MESSAGES: Record<SyncAction, string> = {
   download: 'Dados atualizados com o backup do Drive.',
@@ -32,7 +33,9 @@ export class SideMenu {
   private readonly toast = inject(ToastService);
   protected readonly googleAuth = inject(GoogleAuthService);
   protected readonly driveSync = inject(DriveSyncService);
+  protected readonly installer = inject(InstallService);
 
+  readonly installHelpOpen = signal(false);
   readonly open = model(false);
   readonly openReport = output<void>();
 
@@ -42,6 +45,19 @@ export class SideMenu {
   requestReport(): void {
     this.open.set(false);
     this.openReport.emit();
+  }
+
+  async installApp(): Promise<void> {
+    this.open.set(false);
+
+    if (!this.installer.canPrompt()) {
+      this.installHelpOpen.set(true);
+      return;
+    }
+
+    if (await this.installer.prompt()) {
+      this.toast.success('App instalado!');
+    }
   }
 
   openHelp(): void {

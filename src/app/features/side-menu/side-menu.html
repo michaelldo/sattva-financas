@@ -54,10 +54,12 @@
       </label>
       <button class="menu-item" type="button" (click)="openHelp()">Como usar o backup</button>
     </section>
-
     <section>
       <h3>Ferramentas</h3>
       <button class="menu-item" type="button" (click)="requestReport()">Relatório</button>
+      @if (!installer.installed()) {
+        <button class="menu-item" type="button" (click)="installApp()">Instalar app</button>
+      }
     </section>
     <footer class="menu-footer">
       <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a>
@@ -77,5 +79,78 @@
     </ol>
     <p>Ao importar, os dados atuais deste navegador serão substituídos pelo arquivo escolhido.</p>
     <p>Dica: conectando o Google Drive, essa cópia é feita automaticamente.</p>
+  </div>
+</app-modal>
+
+<app-modal heading="Instalar o app" [(open)]="installHelpOpen">
+  <div class="modal-content">
+    @switch (installer.guide) {
+      @case ('ios') {
+        <ol>
+          <li>
+            Toque em <strong>Compartilhar</strong> (quadrado com seta para cima). No Safari, se não
+            estiver na barra, fica no menu <strong>•••</strong>.
+          </li>
+          <li>Escolha <strong>Adicionar à Tela de Início</strong> e toque em Adicionar.</li>
+        </ol>
+        <p>Funciona no Safari, Chrome, Edge e Firefox do iPhone e do iPad.</p>
+      }
+      @case ('android') {
+        <ol>
+          <li>Toque no menu do navegador (<strong>⋮</strong> ou <strong>☰</strong>).</li>
+          <li>
+            Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong> e
+            confirme.
+          </li>
+        </ol>
+      }
+      @case ('android-firefox') {
+        <ol>
+          <li>Toque no menu <strong>⋮</strong> do Firefox.</li>
+          <li>
+            Escolha <strong>Adicionar à tela inicial</strong> (em algumas versões,
+            <strong>Instalar</strong>) e confirme.
+          </li>
+        </ol>
+      }
+      @case ('mac-safari') {
+        <ol>
+          <li>
+            No menu <strong>Arquivo</strong> do Safari, escolha <strong>Adicionar ao Dock</strong>.
+          </li>
+          <li>Clique em Adicionar. O Sattva aparece no Dock e no Launchpad.</li>
+        </ol>
+        <p>Precisa do macOS Sonoma (14) ou mais novo.</p>
+      }
+      @case ('firefox-windows') {
+        <ol>
+          <li>Clique no ícone de <strong>app</strong> que aparece no fim da barra de endereço.</li>
+          <li>
+            Se ele não aparecer, ative <strong>Web Apps</strong> em Configurações → Firefox Labs e
+            recarregue a página.
+          </li>
+        </ol>
+        <p>
+          Se a sua versão do Firefox ainda não tiver essa opção, instale pelo Chrome ou pelo Edge.
+        </p>
+      }
+      @case ('firefox-desktop') {
+        <p>O Firefox neste sistema ainda não instala sites como app.</p>
+        <p>
+          Para instalar, abra o Sattva no Chrome, no Edge ou no Safari. Ou continue por aqui: no
+          navegador ele funciona igual, inclusive sem internet.
+        </p>
+      }
+      @default {
+        <ol>
+          <li>Clique no ícone de <strong>instalar</strong> no fim da barra de endereço.</li>
+          <li>
+            Se não aparecer: no Chrome, menu <strong>⋮</strong> → Transmitir, salvar e compartilhar
+            → <strong>Instalar página como app</strong>. No Edge, menu <strong>…</strong> →
+            Aplicativos → <strong>Instalar este site como um aplicativo</strong>.
+          </li>
+        </ol>
+      }
+    }
   </div>
 </app-modal>
