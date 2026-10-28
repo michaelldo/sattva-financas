@@ -6,6 +6,7 @@ import { DriveSyncService } from '../../core/services/drive-sync.service';
 import { ToastService } from '../../core/services/toast.service';
 import { WalletStorageService } from '../../core/services/wallet-storage.service';
 import { TransactionKind } from '../../core/models/wallet.models';
+import { InstallService } from '../../core/services/install.service';
 
 @Component({
   imports: [SideMenu],
@@ -46,6 +47,38 @@ describe('SideMenu', () => {
 
     expect(fixture.componentInstance.open()).toBe(false);
     expect(fixture.componentInstance.reportRequests).toBe(1);
+  });
+
+  it('"Instalar app" abre a janela do navegador quando ele permite', async () => {
+    TestBed.inject(InstallService).start();
+    const prompt = vi.fn(() => Promise.resolve());
+    const event = new Event('beforeinstallprompt', { cancelable: true });
+    Object.assign(event, { prompt, userChoice: Promise.resolve({ outcome: 'accepted' }) });
+    window.dispatchEvent(event);
+
+    button('Instalar app').click();
+    await fixture.whenStable();
+
+    expect(prompt).toHaveBeenCalledOnce();
+    expect(fixture.componentInstance.open()).toBe(false);
+    expect(menu.installHelpOpen()).toBe(false);
+    expect(TestBed.inject(ToastService).toasts()).toMatchObject([{ message: 'App instalado!' }]);
+  });
+
+  it('"Instalar app" mostra o passo a passo quando o navegador não abre a janela', async () => {
+    button('Instalar app').click();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.open()).toBe(false);
+    expect(menu.installHelpOpen()).toBe(true);
+  });
+
+  it('"Instalar app" some depois de instalado', async () => {
+    TestBed.inject(InstallService).start();
+    window.dispatchEvent(new Event('appinstalled'));
+    await fixture.whenStable();
+
+    expect(button('Instalar app')).toBeUndefined();
   });
 
   it('"Como usar o backup" fecha o menu e abre a ajuda', async () => {
