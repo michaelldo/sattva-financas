@@ -10,7 +10,13 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src",
+    "preversion": "npm run lint && npm run format:check && npm test",
+    "release:patch": "npm version patch -m \"chore(release): %s\"",
+    "release:minor": "npm version minor -m \"chore(release): %s\"",
+    "release:major": "npm version major -m \"chore(release): %s\""
   },
   "dependencies": {
     "@angular/common": "^21.2.25",
