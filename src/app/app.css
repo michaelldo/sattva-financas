@@ -150,9 +150,13 @@ h1 {
 }
 
 .summary-panel header span {
+  display: inline-block;
   color: #84dbab;
   font-weight: 800;
-  text-transform: capitalize;
+}
+
+.summary-panel header span::first-letter {
+  text-transform: uppercase;
 }
 
 dl {
@@ -277,14 +281,45 @@ dd {
     border-radius: 22px;
   }
 
-  .summary-panel header,
-  dl div {
-    display: grid;
+  .summary-panel {
+    border-radius: 24px;
   }
 
-  .summary-panel header,
+  .summary-panel header {
+    padding: 18px 20px;
+  }
+
+  .summary-panel h2 {
+    font-size: 1.35rem;
+  }
+
+  .summary-panel header span {
+    font-size: 0.9rem;
+  }
+
   dl {
-    padding-inline: 24px;
+    gap: 0;
+    padding: 4px 20px 8px;
+  }
+
+  dl div {
+    align-items: baseline;
+    padding: 14px 0;
+  }
+
+  dl div + div {
+    border-top: 1px solid rgb(255 255 255 / 8%);
+  }
+
+  dt {
+    font-size: 0.95rem;
+    opacity: 0.85;
+  }
+
+  dd {
+    font-size: 1.05rem;
+    font-weight: 700;
+    white-space: nowrap;
   }
 }
 
