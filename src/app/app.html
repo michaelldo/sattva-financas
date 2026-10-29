@@ -117,16 +117,16 @@
       </header>
       <dl>
         <div>
+          <dt>Renda mensal</dt>
+          <dd>{{ summary().income | currency }}</dd>
+        </div>
+        <div>
           <dt>Gastos Fixos</dt>
           <dd>{{ summary().fixedExpenses | currency }}</dd>
         </div>
         <div>
           <dt>Gastos Variáveis</dt>
           <dd>{{ summary().variableExpenses | currency }}</dd>
-        </div>
-        <div>
-          <dt>Renda mensal</dt>
-          <dd>{{ summary().income | currency }}</dd>
         </div>
         <div>
           <dt>Guardado no Cofrinho</dt>
