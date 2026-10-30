@@ -10,12 +10,51 @@
       content="Controle suas finanças pessoais de forma simples: lançamentos por mês, parcelas, cofrinho e relatórios. Gratuito, funciona offline e seus dados ficam com você."
     />
     <meta name="theme-color" content="#121b21" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png" />
+    <link rel="icon" type="image/svg+xml" href="sattva-lotus.svg" />
     <link rel="apple-touch-icon" href="icons/icon-180x180.png" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <style>
+      /* Tela de abertura */
+      html,
+      body {
+        background: #121b21;
+      }
+
+      .splash {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: #121b21;
+      }
+
+      .splash img {
+        width: min(46vw, 200px);
+        height: auto;
+        animation: splash-in 0.5s ease-out both;
+      }
+
+      @keyframes splash-in {
+        from {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .splash img {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <app-root></app-root>
+    <app-root>
+      <div class="splash" aria-hidden="true">
+        <img src="sattva.svg" alt="" width="158" height="151" />
+      </div>
+    </app-root>
     <noscript>O Sattva Finanças precisa do JavaScript ativado para funcionar.</noscript>
   </body>
 </html>
